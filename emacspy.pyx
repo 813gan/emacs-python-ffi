@@ -1,4 +1,5 @@
-
+# cython: language_level=3str
+ 
 cdef extern from "emacs-module.h":
     ctypedef int emacs_funcall_exit
 
