@@ -157,6 +157,17 @@ cdef class EmacsValue:
     def sym_str(self):
         return _F().symbol_name(self).str()
 
+    def type(self):
+        cdef emacs_env* env = get_env()
+        return EmacsValue.wrap(env.type_of(env, self.v)).sym_str()
+
+    def to_python_type(self):
+        my_type = self.type()
+        if my_type == "string":
+            return self.str()
+        elif my_type == "intiger":
+            return self.int()
+
     def __str__(self):
         return _F().prin1_to_string(self).str()
 
@@ -277,6 +288,11 @@ def init():
     def eval_python(s):
         s = s.str()
         return eval(s, eval_python_dict)
+
+    @defun('call-object-python')
+    def call_object_python(name, *args):
+        call = eval(name.str(), eval_python_dict)
+        return call(*(arg.to_python_type() for arg in args))
 
     _F().define_error(sym('python-exception'), "Python error")
     _F().provide(sym('emacspy'))
