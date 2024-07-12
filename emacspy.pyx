@@ -240,7 +240,7 @@ cpdef EmacsValue funcall(f, args):
 
     return EmacsValue.wrap(result)
 
-cdef emacs_value call_python_object(emacs_env *env, ptrdiff_t nargs, emacs_value* args, void * data) with gil:
+cdef emacs_value call_python_object(emacs_env *env, ptrdiff_t nargs, emacs_value* args, void * data) noexcept with gil:
     global current_env
     cdef emacs_env* prev_env = current_env
     current_env = env
