@@ -278,7 +278,21 @@ cdef public int plugin_is_GPL_compatible = 0
 
 eval_python_dict = {}
 
+cdef extern from "subinterpreter.c":
+    void make_interpreter(char*)
+    object run_string(char*, char*)
+
+
 def init():
+    @defun('py-make-interpreter')
+    def py_make_interpreter(interpreter_name):
+        make_interpreter(str.encode(interpreter_name.str()))
+
+    @defun('py-run-string')
+    def py_run_string(run, interpreter_name):
+        return run_string(str.encode(run.str()), str.encode(interpreter_name.str()))
+
+
     @defun('exec-python')
     def exec_python(s):
         s = s.str()
