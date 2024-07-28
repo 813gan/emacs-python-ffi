@@ -278,10 +278,13 @@ cdef public int plugin_is_GPL_compatible = 0
 
 eval_python_dict = {}
 
+def str_elisp2c(string):
+    return str.encode(string.str())
+
 cdef extern from "subinterpreter.c":
     void make_interpreter(char*)
     object run_string(char*, char*)
-
+    void import_module(object, object, char*)
 
 def init():
     @defun('py-make-interpreter')
@@ -307,6 +310,13 @@ def init():
     def call_object_python(name, *args):
         call = eval(name.str(), eval_python_dict)
         return call(*(arg.to_python_type() for arg in args))
+    @defun('py-import')
+    def py_import(name, interpreter_name, as_name=''):
+        if not as_name:
+            as_name = name
+        import_module(name.to_python_type(), as_name.to_python_type(), \
+                      str_elisp2c(interpreter_name))
+
 
     _F().define_error(sym('python-exception'), "Python error")
     _F().provide(sym('emacspy'))
