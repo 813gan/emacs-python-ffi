@@ -1,5 +1,7 @@
 PYTHON := "python3"
 
+.PHONY: test_module_assertions
+
 all: emacspy.so
 
 emacspy.c: emacspy.pyx
@@ -23,3 +25,7 @@ emacspy.so: emacspy.c stub.c subinterpreter.c
 
 clean:
 	rm -vf emacspy.c emacspy.so
+
+test_module_assertions: emacspy.so
+	emacs --batch --module-assertions --eval \
+		'(progn (add-to-list '\''load-path ".") (load "emacspy"))'
