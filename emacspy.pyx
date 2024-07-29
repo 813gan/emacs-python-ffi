@@ -284,6 +284,7 @@ def str_elisp2c(string):
 cdef extern from "subinterpreter.c":
     void make_interpreter(char*)
     object run_string(char*, char*)
+    object call_method(object, object, object, object, char*)
     void import_module(object, object, char*)
 
 def init():
@@ -306,10 +307,6 @@ def init():
         s = s.str()
         return eval(s, eval_python_dict)
 
-    @defun('call-object-python')
-    def call_object_python(name, *args):
-        call = eval(name.str(), eval_python_dict)
-        return call(*(arg.to_python_type() for arg in args))
     @defun('py-import')
     def py_import(name, interpreter_name, as_name=''):
         if not as_name:
@@ -317,6 +314,14 @@ def init():
         import_module(name.to_python_type(), as_name.to_python_type(), \
                       str_elisp2c(interpreter_name))
 
+    @defun('py-call-method')
+    def call_object_python(interpreter_name, obj_name, method_name, *args):
+        args_py = list((arg.to_python_type() for arg in args))
+        ret = call_method(obj_name.to_python_type(), method_name.to_python_type(), args_py, \
+                          {}, str_elisp2c(interpreter_name))
+        if isinstance(ret, BaseException):
+            raise ret
+        return ret
 
     _F().define_error(sym('python-exception'), "Python error")
     _F().provide(sym('emacspy'))

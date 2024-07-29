@@ -114,3 +114,52 @@ PyObject* run_string(char *string, char *interpreter_name) {
 		return exception;
 	}
 }
+
+
+PyObject* call_method(PyObject *obj_name, PyObject *method_name, PyObject *args_pylist,	\
+		      PyObject *kwnames, char *interpreter_name) {
+	struct interpr *sub_interpreter = get_interpreter(interpreter_name);
+	PyGILState_STATE gil = PyGILState_Ensure();
+	PyThreadState *orig_tstate = PyThreadState_Get();
+	PyThreadState_Swap(sub_interpreter->python_interpreter);
+
+	PyObject* global_dict = PyModule_GetDict(sub_interpreter->main_module);
+
+	Py_ssize_t nargs = PyList_Size(args_pylist);
+	size_t nargsf = 1 + PyList_Size(args_pylist); // TODO sign to unsign conversion??
+	size_t size_obj_args = nargsf * sizeof(PyObject);
+	PyObject** obj_with_args = malloc(size_obj_args);
+	obj_with_args[0] = PyObject_GetItem(global_dict, obj_name); // New reference
+
+	if (PyErr_Occurred()) {
+		//Py_DECREF(obj_with_args[0]);
+		PyObject* exception = PyErr_GetRaisedException();
+		PyThreadState_Swap(orig_tstate);
+		PyGILState_Release(gil);
+		free(obj_with_args);
+
+		return exception;
+	}
+
+	assert(obj_with_args[0]); // TODO raise exception
+
+	for (u_int i = 0; i<nargs; ++i) {
+		obj_with_args[1+i] = PyList_GetItem(args_pylist, i);
+	}
+
+	PyObject* obj = PyObject_VectorcallMethod(method_name, obj_with_args, nargsf, kwnames);
+	PyObject* exception = PyErr_GetRaisedException();
+
+	Py_DECREF(obj_with_args[0]);
+	free(obj_with_args);
+
+	PyThreadState_Swap(orig_tstate);
+	PyGILState_Release(gil);
+
+	assert(obj || exception);
+	if (NULL==exception) {
+		return Py_NewRef(obj);
+	} else {
+		return exception; // Raised by caller
+	}
+}
