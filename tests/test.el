@@ -1,0 +1,6 @@
+(progn (add-to-list 'load-path ".")
+       (load "emacspy")
+       (py-make-interpreter "test")
+       (py-import "os.path" "test" "path")
+       (py-run-string "path.realpath('/')" "test")
+       (message (py-call-method "test" "path" "realpath" ".")))

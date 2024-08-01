@@ -1,6 +1,6 @@
 PYTHON := "python3"
 
-.PHONY: test_module_assertions
+.PHONY: test_module_assertions test
 
 all: emacspy.so
 
@@ -25,6 +25,9 @@ emacspy.so: emacspy.c stub.c subinterpreter.c
 
 clean:
 	rm -vf emacspy.c emacspy.so
+
+test: all
+	emacs --batch -l tests/test.el
 
 test_module_assertions: emacspy.so
 	emacs --batch --module-assertions --eval \
