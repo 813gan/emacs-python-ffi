@@ -1,6 +1,10 @@
 PYTHON := "python3"
+ifeq ("$(EMACS)","")
+EMACS := emacs
+endif
 
-.PHONY: test_module_assertions test
+
+.PHONY: all clean test_module_assertions test
 
 all: emacspy.so
 
@@ -27,8 +31,8 @@ clean:
 	rm -vf emacspy.c emacspy.so
 
 test: all
-	emacs --batch -l tests/test.el
+	${EMACS} --batch -l tests/test.el
 
 test_module_assertions: emacspy.so
-	emacs --batch --module-assertions --eval \
+	${EMACS} --batch --module-assertions --eval \
 		'(progn (add-to-list '\''load-path ".") (load "emacspy"))'
