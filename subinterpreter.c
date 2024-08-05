@@ -39,13 +39,13 @@ void make_interpreter(char *inter_name) {
 
 	// https://docs.python.org/3/c-api/init.html#c.Py_NewInterpreterFromConfig
 	const PyInterpreterConfig config = {
-		.use_main_obmalloc = 0,
+		.use_main_obmalloc = 1,
 		.allow_fork = 0,
 		.allow_exec = 0,
 		.allow_threads = 1,
 		.allow_daemon_threads = 0,
 		.check_multi_interp_extensions = 1,
-		.gil = PyInterpreterConfig_OWN_GIL,
+		.gil = PyInterpreterConfig_SHARED_GIL,
 	};
 
 	PyGILState_STATE gil = PyGILState_Ensure();
@@ -109,7 +109,7 @@ PyObject* run_string(char *string, char *interpreter_name) {
 
 	assert(obj || exception);
 	if (NULL==exception) {
-		return Py_NewRef(obj);
+		return obj;
 	} else {
 		return exception;
 	}
@@ -158,7 +158,7 @@ PyObject* call_method(PyObject *obj_name, PyObject *method_name, PyObject *args_
 
 	assert(obj || exception);
 	if (NULL==exception) {
-		return Py_NewRef(obj);
+		return obj;
 	} else {
 		return exception; // Raised by caller
 	}
