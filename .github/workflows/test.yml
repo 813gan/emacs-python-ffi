@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  pull_request:
+    paths-ignore:
+    - '**.md'
+  push:
+    paths-ignore:
+    - '**.md'
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [ubuntu-latest]
+        emacs_version: [27.2, 28.2, 29.3, snapshot]
+        python_version: [3.12.4]
+    steps:
+    - uses: actions/checkout@v4
+    - uses: purcell/setup-emacs@master
+      with:
+        version: ${{ matrix.emacs_version }}
+    - uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python_version }}
+        cache: 'pip'
+    - run: 'pip install -r requirements.txt'
+    - run: 'make test'

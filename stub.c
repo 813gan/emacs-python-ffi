@@ -1,4 +1,4 @@
-#include <emacs-module.h>
+#include "emacs-module.h"
 #include <Python.h>
 #include <dlfcn.h>
 

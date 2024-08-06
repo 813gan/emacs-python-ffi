@@ -9,7 +9,7 @@ endif
 all: emacspy.so
 
 emacspy.c: emacspy.pyx
-	cython3 emacspy.pyx
+	cython emacspy.pyx
 
 # https://github.com/grisha/mod_python/issues/81#issuecomment-551655070
 emacspy.so: BLDLIBRARY=$(shell ${PYTHON} -c \
