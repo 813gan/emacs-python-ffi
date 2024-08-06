@@ -287,6 +287,7 @@ cdef extern from "subinterpreter.c":
     object call_method(object, object, object, object, char*)
     object call_function(object, object, char*)
     void import_module(object, object, char*)
+    object get_global_variable(object, char*)
 
 def init():
     @defun('py-make-interpreter')
@@ -329,6 +330,14 @@ def init():
         args_py = tuple((arg.to_python_type() for arg in args))
         ret = call_function(function_name.to_python_type(),  args_py, \
                             str_elisp2c(interpreter_name))
+        if isinstance(ret, BaseException):
+            raise ret
+        return ret
+
+
+    @defun('py-get-global-variable')
+    def get_global_var(interpreter_name, var_name):
+        ret = get_global_variable(var_name.to_python_type(), str_elisp2c(interpreter_name))
         if isinstance(ret, BaseException):
             raise ret
         return ret

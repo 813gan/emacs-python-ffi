@@ -4,4 +4,5 @@
        (py-import "os.path" "test" "path")
        (py-run-string "path.realpath('/')" "test")
        (message (py-call-method "test" "path" "realpath" "."))
+       (message (py-get-global-variable  "test" "__name__"))
        (message "%i" (py-call-function "test" "len" "123")) )

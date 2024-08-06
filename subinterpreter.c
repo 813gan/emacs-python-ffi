@@ -207,3 +207,25 @@ PyObject* call_function (PyObject *callable_name, PyObject *args_pylist, char *i
 		return exception; // Raised by caller
 	}
 }
+
+PyObject* get_global_variable (PyObject *var_name, char *interpreter_name) {
+	struct interpr *sub_interpreter = get_interpreter(interpreter_name);
+	PyGILState_STATE gil = PyGILState_Ensure();
+	PyThreadState *orig_tstate = PyThreadState_Get();
+	PyThreadState_Swap(sub_interpreter->python_interpreter);
+
+	PyObject* global_dict = PyModule_GetDict(sub_interpreter->main_module);
+
+	PyObject* obj = PyObject_GetItem(global_dict, var_name); // New reference
+	PyObject* exception = PyErr_GetRaisedException();
+
+	PyThreadState_Swap(orig_tstate);
+	PyGILState_Release(gil);
+
+	assert(obj || exception);
+	if (NULL==exception) {
+		return obj;
+	} else {
+		return exception; // Raised by caller
+	}
+}
