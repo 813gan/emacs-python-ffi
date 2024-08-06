@@ -3,4 +3,5 @@
        (py-make-interpreter "test")
        (py-import "os.path" "test" "path")
        (py-run-string "path.realpath('/')" "test")
-       (message (py-call-method "test" "path" "realpath" ".")))
+       (message (py-call-method "test" "path" "realpath" "."))
+       (message "%i" (py-call-function "test" "len" "123")) )

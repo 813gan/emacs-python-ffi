@@ -285,6 +285,7 @@ cdef extern from "subinterpreter.c":
     void make_interpreter(char*)
     object run_string(char*, char*)
     object call_method(object, object, object, object, char*)
+    object call_function(object, object, char*)
     void import_module(object, object, char*)
 
 def init():
@@ -322,6 +323,16 @@ def init():
         if isinstance(ret, BaseException):
             raise ret
         return ret
+
+    @defun('py-call-function')
+    def call_function_python(interpreter_name, function_name, *args):
+        args_py = tuple((arg.to_python_type() for arg in args))
+        ret = call_function(function_name.to_python_type(),  args_py, \
+                            str_elisp2c(interpreter_name))
+        if isinstance(ret, BaseException):
+            raise ret
+        return ret
+
 
     _F().define_error(sym('python-exception'), "Python error")
     _F().provide(sym('emacspy'))

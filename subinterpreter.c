@@ -163,3 +163,47 @@ PyObject* call_method(PyObject *obj_name, PyObject *method_name, PyObject *args_
 		return exception; // Raised by caller
 	}
 }
+
+PyObject* call_function (PyObject *callable_name, PyObject *args_pylist, char *interpreter_name) {
+	struct interpr *sub_interpreter = get_interpreter(interpreter_name);
+	PyGILState_STATE gil = PyGILState_Ensure();
+	PyThreadState *orig_tstate = PyThreadState_Get();
+	PyThreadState_Swap(sub_interpreter->python_interpreter);
+
+	PyObject* global_dict = PyModule_GetDict(sub_interpreter->main_module);
+
+	PyObject* callable = PyObject_GetItem(global_dict, callable_name); // New reference
+
+	if (NULL==callable) {
+		// PyObject* ignored_exception = PyErr_GetRaisedException(); ???
+		PyObject* builtins_name = PyUnicode_FromString("__builtins__");
+		PyObject* builtins = PyObject_GetItem(global_dict, builtins_name);
+		callable = PyObject_GetAttr(builtins, callable_name);
+	}
+
+
+	if (PyErr_Occurred()) {
+		PyObject* exception = PyErr_GetRaisedException();
+		PyThreadState_Swap(orig_tstate);
+		PyGILState_Release(gil);
+
+		return exception;
+	}
+
+	assert(callable);
+
+	PyObject* obj = PyObject_Call(callable, args_pylist, NULL);
+	PyObject* exception = PyErr_GetRaisedException();
+
+	Py_DECREF(callable);
+
+	PyThreadState_Swap(orig_tstate);
+	PyGILState_Release(gil);
+
+	assert(obj || exception);
+	if (NULL==exception) {
+		return obj;
+	} else {
+		return exception; // Raised by caller
+	}
+}
