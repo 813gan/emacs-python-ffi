@@ -31,7 +31,7 @@ clean:
 	rm -vf emacspy.c emacspy.so
 
 test: all
-	${EMACS} --batch -l tests/test.el
+	${EMACS} -batch -l ert -l tests/test.el -f ert-run-tests-batch-and-exit
 
 test_module_assertions: emacspy.so
 	${EMACS} --batch --module-assertions --eval \

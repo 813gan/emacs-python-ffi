@@ -293,6 +293,7 @@ def init():
     @defun('py-make-interpreter')
     def py_make_interpreter(interpreter_name):
         make_interpreter(str.encode(interpreter_name.str()))
+        return True
 
     @defun('py-run-string')
     def py_run_string(run, interpreter_name):
@@ -315,6 +316,7 @@ def init():
             as_name = name
         import_module(name.to_python_type(), as_name.to_python_type(), \
                       str_elisp2c(interpreter_name))
+        return True
 
     @defun('py-call-method')
     def call_object_python(interpreter_name, obj_name, method_name, *args):
