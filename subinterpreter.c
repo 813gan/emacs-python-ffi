@@ -229,3 +229,38 @@ PyObject* get_global_variable (PyObject *var_name, char *interpreter_name) {
 		return exception; // Raised by caller
 	}
 }
+
+PyObject* get_object_attr(char *interpreter_name, PyObject *obj_name, \
+			   PyObject *attr_name, PyObject *target_name) {
+	struct interpr *sub_interpreter = get_interpreter(interpreter_name);
+	PyGILState_STATE gil = PyGILState_Ensure();
+	PyThreadState *orig_tstate = PyThreadState_Get();
+	PyThreadState_Swap(sub_interpreter->python_interpreter);
+
+	PyObject* global_dict = PyModule_GetDict(sub_interpreter->main_module);
+	PyObject* holding_obj = PyObject_GetItem(global_dict, obj_name); // New reference
+
+	PyObject* obj = NULL;
+		
+	PyObject* exception = PyErr_GetRaisedException();
+	if (exception) {
+		goto finish;
+	}
+
+
+	obj = PyObject_GetAttr(holding_obj, attr_name); // New reference
+	exception = PyErr_GetRaisedException();
+
+	finish:
+	Py_XDECREF(holding_obj);
+
+	PyThreadState_Swap(orig_tstate);
+	PyGILState_Release(gil);
+
+	assert(obj || exception);
+	if (NULL==exception) {
+		return obj;
+	} else {
+		return exception; // Raised by caller
+	}
+}

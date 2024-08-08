@@ -288,6 +288,7 @@ cdef extern from "subinterpreter.c":
     object call_function(object, object, char*)
     void import_module(object, object, char*)
     object get_global_variable(object, char*)
+    object get_object_attr(char*, object, object, object)
 
 def init():
     @defun('py-make-interpreter')
@@ -344,6 +345,13 @@ def init():
             raise ret
         return ret
 
+    @defun('py-get-object-attr')
+    def get_obj_attr(interpreter_name, obj_name, attr_name, target_name=''):
+        ret = get_object_attr(str_elisp2c(interpreter_name), obj_name.to_python_type(), \
+                              attr_name.to_python_type(), target_name)
+        if isinstance(ret, BaseException):
+            raise ret
+        return ret
 
     _F().define_error(sym('python-exception'), "Python error")
     _F().provide(sym('emacspy'))
