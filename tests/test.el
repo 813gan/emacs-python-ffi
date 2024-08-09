@@ -24,3 +24,8 @@
 (ert-deftest ert-test-emacspy-py-get-object-attr ()
   (should (string= "0123456789" (py-get-object-attr "test" "string" "digits")))
   )
+
+(ert-deftest ert-test-emacspy-py-set-global ()
+  (should (py-set-global "test" "test_str" "test_value"))
+  (should (string= "test_value" (py-get-global-variable  "test" "test_str")))
+  )

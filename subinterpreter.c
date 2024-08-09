@@ -264,3 +264,26 @@ PyObject* get_object_attr(char *interpreter_name, PyObject *obj_name, \
 		return exception; // Raised by caller
 	}
 }
+
+PyObject* set_global(char *interpreter_name, PyObject *as, PyObject *obj) {
+	struct interpr *sub_interpreter = get_interpreter(interpreter_name);
+	PyGILState_STATE gil = PyGILState_Ensure();
+	PyThreadState *orig_tstate = PyThreadState_Get();
+	PyThreadState_Swap(sub_interpreter->python_interpreter);
+
+	PyObject* global_dict = PyModule_GetDict(sub_interpreter->main_module);
+
+	PyObject_SetItem(global_dict, as, obj);
+	PyObject* exception = PyErr_GetRaisedException();
+	PyObject* ret = Py_True;
+
+	PyThreadState_Swap(orig_tstate);
+	PyGILState_Release(gil);
+
+	assert(obj || exception);
+	if (NULL==exception) {
+		return ret;
+	} else {
+		return exception; // Raised by caller
+	}
+}

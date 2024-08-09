@@ -289,6 +289,7 @@ cdef extern from "subinterpreter.c":
     void import_module(object, object, char*)
     object get_global_variable(object, char*)
     object get_object_attr(char*, object, object, object)
+    object set_global(char*, object, object)
 
 def init():
     @defun('py-make-interpreter')
@@ -349,6 +350,14 @@ def init():
     def get_obj_attr(interpreter_name, obj_name, attr_name, target_name=''):
         ret = get_object_attr(str_elisp2c(interpreter_name), obj_name.to_python_type(), \
                               attr_name.to_python_type(), target_name)
+        if isinstance(ret, BaseException):
+            raise ret
+        return ret
+
+    @defun('py-set-global')
+    def py_set_global(interpreter_name, obj, target_name):
+        ret = set_global(str_elisp2c(interpreter_name), obj.to_python_type(), \
+                              target_name.to_python_type())
         if isinstance(ret, BaseException):
             raise ret
         return ret
