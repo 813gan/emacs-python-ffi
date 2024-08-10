@@ -49,3 +49,11 @@
   (should (py-set-global "test" "test_str" "test_value"))
   (should (string= "test_value" (py-get-global-variable  "test" "test_str")))
   )
+
+(ert-deftest ert-test-emacspy-import-custom-module ()
+  (should (py-import "sys" "test"))
+  (should (py-get-object-attr "test" "sys" "path" "syspath"))
+  (should-not (py-call-method "test" "syspath" "append" "./tests/"))
+  (should (py-import "emacspy_test" "test"))
+  (should (py-get-object-attr "test" "emacspy_test" "test_obj" "test_obj"))
+  (should (string= "test" (py-call-method "test" "test_obj" "get_string"))) )
