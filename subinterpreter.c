@@ -246,29 +246,44 @@ PyObject* get_object_attr(char *interpreter_name, PyObject *obj_name, \
 	PyThreadState *orig_tstate = PyThreadState_Get();
 	PyThreadState_Swap(sub_interpreter->python_interpreter);
 
-	PyObject* obj = NULL;
+	PyObject *obj = NULL;
+	PyObject *ret = NULL;
+	PyObject *exception = NULL;
 
-	PyObject* global_dict = PyModule_GetDict(sub_interpreter->main_module);
-	PyObject* holding_obj = PyObject_GetItem(global_dict, obj_name); // New reference
-		
-	PyObject* exception = PyErr_GetRaisedException();
-	if (exception)
+	PyObject *global_dict = PyModule_GetDict(sub_interpreter->main_module);
+	PyObject *holding_obj = PyObject_GetItem(global_dict, obj_name); // New reference
+	if (NULL == holding_obj) {
+		PyErr_SetObject(PyExc_KeyError, holding_obj);
+		exception = PyErr_GetRaisedException();
 		goto finish;
+	}
 
 	obj = PyObject_GetAttr(holding_obj, attr_name); // New reference
-	exception = PyErr_GetRaisedException();
+	if (NULL == obj) {
+		PyErr_SetObject(PyExc_AttributeError, attr_name);
+		exception = PyErr_GetRaisedException();
+		goto finish;
+	}
 
-	finish:
+	if (PyUnicode_GetLength(target_name) > 0) {
+		ret = Py_True;
+		PyObject_SetItem(global_dict, target_name, obj);
+		exception = PyErr_GetRaisedException();
+	} else {
+		ret = obj;
+	}
+
+finish:
 	Py_XDECREF(holding_obj);
 
 	PyThreadState_Swap(orig_tstate);
 	PyGILState_Release(gil);
 
-	assert(obj || exception);
-	if (NULL==exception) {
-		return obj;
+	assert(ret || exception);
+	if (NULL == exception) {
+		return ret;
 	} else {
-		return exception; // Raised by caller
+		return exception;
 	}
 }
 

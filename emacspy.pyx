@@ -358,6 +358,8 @@ def init():
 
     @defun('py-get-object-attr')
     def get_obj_attr(interpreter_name, obj_name, attr_name, target_name=''):
+        if target_name:
+            target_name = target_name.to_python_type()
         ret = get_object_attr(str_elisp2c(interpreter_name), obj_name.to_python_type(), \
                               attr_name.to_python_type(), target_name)
         if isinstance(ret, BaseException):

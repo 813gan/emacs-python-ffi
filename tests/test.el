@@ -36,7 +36,14 @@
 
 (ert-deftest ert-test-emacspy-py-get-object-attr ()
   (should (string= "0123456789" (py-get-object-attr "test" "string" "digits")))
-  )
+
+  (should (py-get-object-attr "test" "string" "digits" "test_digs"))
+  (should (string= "0123456789" (py-get-global-variable  "test" "test_digs")))
+
+  (should-error (py-get-object-attr "test" "NON_EXISTING_OBJECT" "digits" "test_digs")
+                :type 'python-exception)
+  (should-error (py-get-object-attr "test" "string" "NON_EXISTING_ATTR")
+                :type 'python-exception) )
 
 (ert-deftest ert-test-emacspy-py-set-global ()
   (should (py-set-global "test" "test_str" "test_value"))
