@@ -268,8 +268,6 @@ cdef emacs_value call_python_object(emacs_env *env, ptrdiff_t nargs, emacs_value
         result = obj(*arg_list)
         c_result = unwrap(result)
     except BaseException as exc:
-        print('Error in Emacs:')
-        traceback.print_exc()
         c_result = string_ptr("error")
         msg = type(exc).__name__ + ': ' + str(exc)
         env.non_local_exit_signal(env, sym_ptr('python-exception'), string_ptr(msg))
