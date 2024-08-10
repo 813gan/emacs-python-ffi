@@ -294,7 +294,7 @@ cdef extern from "subinterpreter.c":
     object run_string(char*, char*)
     object call_method(object, object, object, object, char*)
     object call_function(object, object, char*)
-    void import_module(object, object, char*)
+    object import_module(object, object, char*)
     object get_global_variable(object, char*)
     object get_object_attr(char*, object, object, object)
     object set_global(char*, object, object)
@@ -307,8 +307,10 @@ def init():
 
     @defun('py-run-string')
     def py_run_string(run, interpreter_name):
-        return run_string(str.encode(run.str()), str.encode(interpreter_name.str()))
-
+        ret = run_string(str.encode(run.str()), str.encode(interpreter_name.str()))
+        if isinstance(ret, BaseException):
+            raise ret
+        return ret
 
     @defun('exec-python')
     def exec_python(s):
@@ -324,9 +326,11 @@ def init():
     def py_import(name, interpreter_name, as_name=''):
         if not as_name:
             as_name = name
-        import_module(name.to_python_type(), as_name.to_python_type(), \
+        ret = import_module(name.to_python_type(), as_name.to_python_type(), \
                       str_elisp2c(interpreter_name))
-        return True
+        if isinstance(ret, BaseException):
+            raise ret
+        return ret
 
     @defun('py-call-method')
     def call_object_python(interpreter_name, obj_name, method_name, *args):

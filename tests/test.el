@@ -3,10 +3,14 @@
   (load "emacspy")
   (should (py-make-interpreter "test"))
   (should (py-import "string" "test"))
-  (should (py-import "os.path" "test" "ospath")) )
+  (should (py-import "os.path" "test" "ospath"))
+  (should-error (py-import "NON_EXISTING_MOD" "test")
+                :type 'python-exception) )
 
 (ert-deftest ert-test-emacspy-py-run-string ()
   (should (py-run-string "ospath.realpath('/')" "test"))
+  (should-error (py-run-string "some bullshit" "test")
+                :type 'python-exception)
   )
 
 (ert-deftest ert-test-emacspy-data-bool ()
@@ -15,7 +19,10 @@
 
 (ert-deftest ert-test-emacspy-py-call-method ()
   (should (string= "/" (py-call-method "test" "ospath" "realpath" "/")))
-  )
+  (should-error (string= "/" (py-call-method "test" "ospath" "DUMMY_METHOD"))
+                :type 'python-exception)
+  (should-error (string= "/" (py-call-method "test" "NON_EXISTING_OBJECT" "DUMMY_METHOD"))
+                :type 'python-exception) )
 
 (ert-deftest ert-test-emacspy-py-get-global-variable ()
   (should (string= "__main__" (py-get-global-variable  "test" "__name__")))
@@ -23,6 +30,8 @@
 
 (ert-deftest ert-test-emacspy-py-call-function ()
   (should (eq 3 (py-call-function "test" "len" "123")))
+  (should-error (py-call-function "test" "NON-EXISTING-FUNCTION" "123")
+                :type 'python-exception)
   )
 
 (ert-deftest ert-test-emacspy-py-get-object-attr ()

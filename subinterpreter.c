@@ -78,18 +78,34 @@ void make_interpreter(char *inter_name) {
 	return;
 }
 
-void import_module(PyObject *name, PyObject *as, char *interpreter_name) {
+PyObject* import_module(PyObject *name, PyObject *as, char *interpreter_name) {
 	struct interpr *sub_interpreter = get_interpreter(interpreter_name);
 	PyGILState_STATE gil = PyGILState_Ensure();
 	PyThreadState *orig_tstate = PyThreadState_Get();
 	PyThreadState_Swap(sub_interpreter->python_interpreter);
 
-	PyObject* global_dict = PyModule_GetDict(sub_interpreter->main_module);
+	PyObject *global_dict = PyModule_GetDict(sub_interpreter->main_module);
+	PyObject *ret = Py_True;
 
-	PyObject_SetItem(global_dict, as, PyImport_Import(name));
+	PyObject *module = PyImport_Import(name); // New reference
+	PyObject *exception = PyErr_GetRaisedException();
+	if (exception) 
+		goto finish;
 
+	PyObject_SetItem(global_dict, as, module);
+	exception = PyErr_GetRaisedException();
+
+finish:
+	Py_XDECREF(module);
 	PyThreadState_Swap(orig_tstate);
 	PyGILState_Release(gil);
+
+	assert(ret || exception);
+	if (NULL == exception) {
+		return ret;
+	} else {
+		return exception;
+	}
 }
 
 PyObject* run_string(char *string, char *interpreter_name) {
@@ -123,42 +139,40 @@ PyObject* call_method(PyObject *obj_name, PyObject *method_name, PyObject *args_
 	PyThreadState *orig_tstate = PyThreadState_Get();
 	PyThreadState_Swap(sub_interpreter->python_interpreter);
 
-	PyObject* global_dict = PyModule_GetDict(sub_interpreter->main_module);
+	PyObject *global_dict = PyModule_GetDict(sub_interpreter->main_module);
 
 	Py_ssize_t nargs = PyList_Size(args_pylist);
 	size_t nargsf = 1 + PyList_Size(args_pylist); // TODO sign to unsign conversion??
 	size_t size_obj_args = nargsf * sizeof(PyObject);
-	PyObject** obj_with_args = malloc(size_obj_args);
+	PyObject **obj_with_args = malloc(size_obj_args);
+	assert(obj_with_args);
 	obj_with_args[0] = PyObject_GetItem(global_dict, obj_name); // New reference
 
-	if (PyErr_Occurred()) {
-		//Py_DECREF(obj_with_args[0]);
-		PyObject* exception = PyErr_GetRaisedException();
-		PyThreadState_Swap(orig_tstate);
-		PyGILState_Release(gil);
-		free(obj_with_args);
+	PyObject *ret = NULL;
+	PyObject *exception = NULL;
 
-		return exception;
+	if (NULL == obj_with_args[0]) {
+		PyErr_SetObject(PyExc_KeyError, obj_name);
+		exception = PyErr_GetRaisedException();
+		goto finish;
 	}
 
-	assert(obj_with_args[0]); // TODO raise exception
-
-	for (u_int i = 0; i<nargs; ++i) {
-		obj_with_args[1+i] = PyList_GetItem(args_pylist, i);
+	for (u_int i = 0; i < nargs; ++i) {
+		obj_with_args[1 + i] = PyList_GetItem(args_pylist, i);
 	}
 
-	PyObject* obj = PyObject_VectorcallMethod(method_name, obj_with_args, nargsf, kwnames);
-	PyObject* exception = PyErr_GetRaisedException();
-
-	Py_DECREF(obj_with_args[0]);
+	ret = PyObject_VectorcallMethod(method_name, obj_with_args, nargsf, kwnames);
+	exception = PyErr_GetRaisedException();
+finish:
+	Py_XDECREF(obj_with_args[0]);
 	free(obj_with_args);
 
 	PyThreadState_Swap(orig_tstate);
 	PyGILState_Release(gil);
 
-	assert(obj || exception);
-	if (NULL==exception) {
-		return obj;
+	assert(ret || exception);
+	if (NULL == exception) {
+		return ret;
 	} else {
 		return exception; // Raised by caller
 	}
@@ -170,41 +184,36 @@ PyObject* call_function (PyObject *callable_name, PyObject *args_pylist, char *i
 	PyThreadState *orig_tstate = PyThreadState_Get();
 	PyThreadState_Swap(sub_interpreter->python_interpreter);
 
-	PyObject* global_dict = PyModule_GetDict(sub_interpreter->main_module);
+	PyObject *global_dict = PyModule_GetDict(sub_interpreter->main_module);
+	PyObject *callable = PyObject_GetItem(global_dict, callable_name); // New reference
+	PyObject *exception = NULL;
+	PyObject *ret = NULL;
 
-	PyObject* callable = PyObject_GetItem(global_dict, callable_name); // New reference
-
-	if (NULL==callable) {
-		// PyObject* ignored_exception = PyErr_GetRaisedException(); ???
-		PyObject* builtins_name = PyUnicode_FromString("__builtins__");
-		PyObject* builtins = PyObject_GetItem(global_dict, builtins_name);
+	if (NULL == callable) {
+		PyObject *builtins_name = PyUnicode_FromString("__builtins__");
+		PyObject *builtins = PyObject_GetItem(global_dict, builtins_name);
 		callable = PyObject_GetAttr(builtins, callable_name);
 	}
 
-
-	if (PyErr_Occurred()) {
-		PyObject* exception = PyErr_GetRaisedException();
-		PyThreadState_Swap(orig_tstate);
-		PyGILState_Release(gil);
-
-		return exception;
-	}
+	exception = PyErr_GetRaisedException();
+	if (exception)
+		goto finish;
 
 	assert(callable);
 
-	PyObject* obj = PyObject_Call(callable, args_pylist, NULL);
-	PyObject* exception = PyErr_GetRaisedException();
+	ret = PyObject_Call(callable, args_pylist, NULL);
+	exception = PyErr_GetRaisedException();
 
-	Py_DECREF(callable);
-
+finish:
+	Py_XDECREF(callable);
 	PyThreadState_Swap(orig_tstate);
 	PyGILState_Release(gil);
 
-	assert(obj || exception);
-	if (NULL==exception) {
-		return obj;
+	assert(ret || exception);
+	if (NULL == exception) {
+		return ret;
 	} else {
-		return exception; // Raised by caller
+		return exception;
 	}
 }
 
@@ -237,16 +246,14 @@ PyObject* get_object_attr(char *interpreter_name, PyObject *obj_name, \
 	PyThreadState *orig_tstate = PyThreadState_Get();
 	PyThreadState_Swap(sub_interpreter->python_interpreter);
 
+	PyObject* obj = NULL;
+
 	PyObject* global_dict = PyModule_GetDict(sub_interpreter->main_module);
 	PyObject* holding_obj = PyObject_GetItem(global_dict, obj_name); // New reference
-
-	PyObject* obj = NULL;
 		
 	PyObject* exception = PyErr_GetRaisedException();
-	if (exception) {
+	if (exception)
 		goto finish;
-	}
-
 
 	obj = PyObject_GetAttr(holding_obj, attr_name); // New reference
 	exception = PyErr_GetRaisedException();
