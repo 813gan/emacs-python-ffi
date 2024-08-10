@@ -20,7 +20,7 @@ emacspy.so: LIBPYTHON_NAME=$(shell ${PYTHON} -c \
 	 'import sysconfig; print(sysconfig.get_config_var("LDLIBRARY"))')
 emacspy.so: emacspy.c stub.c subinterpreter.c
 	gcc -O2 -fPIC -g -DCYTHON_FAST_THREAD_STATE=0 -DCYTHON_PEP489_MULTI_PHASE_INIT=0 \
-		-Wall -Werror -fstack-protector -fstack-clash-protection -fcf-protection \
+		-Wall -Wextra -Werror -fstack-protector -fstack-clash-protection -fcf-protection \
 		-D_FORTIFY_SOURCE=2 -ftrapv \
 		emacspy.c stub.c \
 		${BLDLIBRARY} -DLIBPYTHON_NAME=$(LIBPYTHON_NAME) \
