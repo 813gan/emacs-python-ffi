@@ -174,6 +174,8 @@ cdef class EmacsValue:
 cdef emacs_value unwrap(obj) except *:
     if isinstance(obj, str):
         obj = string(obj)
+    elif obj is True or obj is False: # test for bool must be before int
+        obj = make_bool(obj)
     elif isinstance(obj, int):
         obj = make_int(obj)
     elif obj is None:
@@ -200,6 +202,12 @@ cpdef string(str s):
 cpdef make_int(int i):
     cdef emacs_env* env = get_env()
     return EmacsValue.wrap(env.make_integer(env, i))
+
+cpdef make_bool(bool b):
+    cdef emacs_env* env = get_env()
+    if b:
+        return EmacsValue.wrap(env.intern(env, "t".encode('utf8')))
+    return nil
 
 cdef emacs_value string_ptr(str s):
     cdef emacs_env* env = get_env()

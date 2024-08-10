@@ -9,6 +9,10 @@
   (should (py-run-string "ospath.realpath('/')" "test"))
   )
 
+(ert-deftest ert-test-emacspy-data-bool ()
+  (should (eq 't (py-run-string "True" "test")))
+  (should (eq nil (py-run-string "False" "test"))) )
+
 (ert-deftest ert-test-emacspy-py-call-method ()
   (should (string= "/" (py-call-method "test" "ospath" "realpath" "/")))
   )
