@@ -14,9 +14,12 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        os: [ubuntu-latest, macos-latest]
-        emacs_version: [28.2, 29.3, snapshot]
-        python_version: [3.12.4]
+        os: [ubuntu-latest]
+        emacs_version: [27.2, 28.2, 29.3, snapshot]
+        python_version: [3.11.2, 3.12.4]
+        include:
+          - os: macos-latest
+            emacs_version: snapshot
     steps:
     - uses: actions/checkout@v4
     - uses: purcell/setup-emacs@master
