@@ -31,7 +31,7 @@ emacspy.so: emacspy.c stub.c subinterpreter.c
 		-Wall -Wextra -Werror ${GCC_NO_WARN} ${HARDENING_FLAGS} \
 		emacspy.c stub.c \
 		${BLDLIBRARY} -DLIBPYTHON_NAME=$(LIBPYTHON_NAME) \
-		-shared $(shell pkg-config --cflags --libs $(PKGCONFIG_PATH)"/python3.pc") \
+		-shared $(shell pkg-config --cflags --libs $(PKGCONFIG_PATH)"/python3-embed.pc") \
 		-o emacspy.so
 
 clean:
