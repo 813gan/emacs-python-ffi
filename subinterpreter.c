@@ -33,7 +33,7 @@ struct interpr *get_interpreter(char *name) {
 }
 
 void make_interpreter(char *inter_name) {
-	u_int name_len = strnlen(inter_name, MAX_INTERPRETER_NAME_LEN) + 1;
+	unsigned int name_len = strnlen(inter_name, MAX_INTERPRETER_NAME_LEN) + 1;
 	char *name = malloc(name_len);
 	strncpy(name, inter_name, name_len);
 
@@ -157,7 +157,7 @@ PyObject* call_method(PyObject *obj_name, PyObject *method_name, PyObject *args_
 		goto finish;
 	}
 
-	for (u_int i = 0; i < nargs; ++i) {
+	for (unsigned int i = 0; i < nargs; ++i) {
 		obj_with_args[1 + i] = PyList_GetItem(args_pylist, i);
 	}
 
