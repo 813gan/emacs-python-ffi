@@ -3,6 +3,14 @@ ifeq ("$(EMACS)","")
 EMACS := emacs
 endif
 
+HARDENING_FLAGS=-fstack-protector -fstack-clash-protection -fcf-protection \
+	-D_FORTIFY_SOURCE=2 -ftrapv
+
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S), Darwin) # Clang does not support some gcc options
+GCC_NO_WARN=-Wno-unused-command-line-argument
+HARDENING_FLAGS=''
+endif
 
 .PHONY: all clean test_module_assertions test
 
@@ -20,11 +28,10 @@ emacspy.so: LIBPYTHON_NAME=$(shell ${PYTHON} -c \
 	 'import sysconfig; print(sysconfig.get_config_var("LDLIBRARY"))')
 emacspy.so: emacspy.c stub.c subinterpreter.c
 	gcc -O2 -fPIC -g -DCYTHON_FAST_THREAD_STATE=0 -DCYTHON_PEP489_MULTI_PHASE_INIT=0 \
-		-Wall -Wextra -Werror -fstack-protector -fstack-clash-protection -fcf-protection \
-		-D_FORTIFY_SOURCE=2 -ftrapv \
+		-Wall -Wextra -Werror ${GCC_NO_WARN} ${HARDENING_FLAGS} \
 		emacspy.c stub.c \
 		${BLDLIBRARY} -DLIBPYTHON_NAME=$(LIBPYTHON_NAME) \
-		-shared $(shell pkg-config --cflags --libs $(PKGCONFIG_PATH)"/python3.pc") \
+		-shared $(shell pkg-config --cflags --libs $(PKGCONFIG_PATH)"/python3-embed.pc") \
 		-o emacspy.so
 
 clean:
