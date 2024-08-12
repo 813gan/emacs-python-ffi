@@ -2,7 +2,7 @@ PYTHON := "python3"
 ifeq ("$(EMACS)","")
 EMACS := emacs
 endif
-ifeq ($(OS_NAME), Darwin)
+ifeq ($(UNAME_S), Darwin)
 GCC_MORE_FLAGS=-Wno-unused-command-line-argument
 endif
 
