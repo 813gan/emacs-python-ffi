@@ -15,7 +15,7 @@ jobs:
       fail-fast: true
       matrix:
         os: [ubuntu-latest, macos-latest]
-        emacs_version: [27.2, 28.2, 29.3, snapshot]
+        emacs_version: [28.2, 29.3, snapshot]
         python_version: [3.12.4]
     steps:
     - uses: actions/checkout@v4
