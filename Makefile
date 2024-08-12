@@ -4,7 +4,7 @@ EMACS := emacs
 endif
 UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S), Darwin)
-GCC_MORE_FLAGS=-Wno-unused-command-line-argument
+GCC_MORE_FLAGS="-Wno-unused-command-line-argument -fno-cf-protection"
 endif
 
 .PHONY: all clean test_module_assertions test
