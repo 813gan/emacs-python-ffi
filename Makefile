@@ -40,7 +40,8 @@ clean:
 test: test_ert test_formatting
 
 test_ert: all
-	${EMACS} -batch -l ert -l tests/test.el -f ert-run-tests-batch-and-exit
+	ulimit -c unlimited; \
+		${EMACS} -batch -l ert -l tests/test.el -f ert-run-tests-batch-and-exit
 
 test_formatting:
 ifeq ($(UNAME_S), Darwin)

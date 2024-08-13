@@ -32,3 +32,8 @@ jobs:
         cache: 'pip'
     - run: 'pip install -r requirements.txt'
     - run: 'make test'
+    - uses: actions/upload-artifact@master # capture all crashes as build artifacts
+      if: always()
+      with:
+        name: core_dumps
+        path: ./core
