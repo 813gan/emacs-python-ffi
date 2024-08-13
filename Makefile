@@ -41,7 +41,7 @@ test: test_ert test_formatting
 
 test_ert: all
 	ulimit -c unlimited; \
-		${EMACS} -batch -l ert -l tests/test.el -f ert-run-tests-batch-and-exit
+	${EMACS} --module-assertions -batch -l ert -l tests/test.el -f ert-run-tests-batch-and-exit
 
 test_formatting:
 ifeq ($(UNAME_S), Darwin)
@@ -49,7 +49,3 @@ ifeq ($(UNAME_S), Darwin)
 else
 	clang-format --dry-run --Werror stub.c subinterpreter.c
 endif
-
-test_module_assertions: emacspy.so
-	${EMACS} --batch --module-assertions --eval \
-		'(progn (add-to-list '\''load-path ".") (load "emacspy"))'
