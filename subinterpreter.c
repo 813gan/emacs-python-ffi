@@ -32,10 +32,10 @@ struct interpr *get_interpreter(char *name) {
 	return ret;
 }
 
-void make_interpreter(char *inter_name) {
-	unsigned int name_len = strnlen(inter_name, MAX_INTERPRETER_NAME_LEN) + 1;
+void make_interpreter(char *interpreter_name) {
+	unsigned int name_len = strnlen(interpreter_name, MAX_INTERPRETER_NAME_LEN) + 1;
 	char *name = malloc(name_len);
-	strncpy(name, inter_name, name_len);
+	strncpy(name, interpreter_name, name_len);
 
 	// https://docs.python.org/3/c-api/init.html#c.Py_NewInterpreterFromConfig
 	const PyInterpreterConfig config = {
@@ -78,7 +78,7 @@ void make_interpreter(char *inter_name) {
 	return;
 }
 
-PyObject* import_module(PyObject *name, PyObject *as, char *interpreter_name) {
+PyObject* import_module(char *interpreter_name, PyObject *name, PyObject *as) {
 	struct interpr *sub_interpreter = get_interpreter(interpreter_name);
 	PyGILState_STATE gil = PyGILState_Ensure();
 	PyThreadState *orig_tstate = PyThreadState_Get();
@@ -251,7 +251,7 @@ finish:
 	}
 }
 
-PyObject* get_global_variable (PyObject *var_name, char *interpreter_name) {
+PyObject* get_global_variable(char *interpreter_name, PyObject *var_name) {
 	struct interpr *sub_interpreter = get_interpreter(interpreter_name);
 	PyGILState_STATE gil = PyGILState_Ensure();
 	PyThreadState *orig_tstate = PyThreadState_Get();
