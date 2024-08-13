@@ -289,7 +289,7 @@ def str_elisp2c(string):
 
 cdef extern from "subinterpreter.c":
     void make_interpreter(char*)
-    object run_string(char*, char*)
+    object run_string(char*, char*, object)
     object call_method(object, object, object, object, char*)
     object call_function(object, object, char*)
     object import_module(object, object, char*)
@@ -304,8 +304,10 @@ def init():
         return True
 
     @defun('py-run-string')
-    def py_run_string(run, interpreter_name):
-        ret = run_string(str.encode(run.str()), str.encode(interpreter_name.str()))
+    def py_run_string(interpreter_name, run, target_name=''):
+        if target_name:
+            target_name = target_name.to_python_type()
+        ret = run_string(str.encode(interpreter_name.str()), str.encode(run.str()), target_name)
         if isinstance(ret, BaseException):
             raise ret
         return ret

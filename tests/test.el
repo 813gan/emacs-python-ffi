@@ -8,14 +8,16 @@
                 :type 'python-exception) )
 
 (ert-deftest ert-test-emacspy-py-run-string ()
-  (should (py-run-string "ospath.realpath('/')" "test"))
-  (should-error (py-run-string "some bullshit" "test")
+  (should (py-run-string "test" "ospath.realpath('/')"))
+  (should-error (py-run-string "test" "some bullshit")
                 :type 'python-exception)
+  (should (py-run-string "test" "ospath.realpath('/')" "run_string_test_var"))
+  (should (string= "/" (py-get-global-variable  "test" "run_string_test_var")))
   )
 
 (ert-deftest ert-test-emacspy-data-bool ()
-  (should (eq 't (py-run-string "True" "test")))
-  (should (eq nil (py-run-string "False" "test"))) )
+  (should (eq 't (py-run-string "test" "True")))
+  (should (eq nil (py-run-string "test" "False"))) )
 
 (ert-deftest ert-test-emacspy-py-call-method ()
   (should (string= "/" (py-call-method "test" "ospath" "realpath" "/")))

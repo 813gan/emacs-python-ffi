@@ -108,24 +108,35 @@ finish:
 	}
 }
 
-PyObject* run_string(char *string, char *interpreter_name) {
+PyObject* run_string(char *interpreter_name, char *string, PyObject *target_name) {
 	struct interpr *sub_interpreter = get_interpreter(interpreter_name);
 	PyGILState_STATE gil = PyGILState_Ensure();
 	PyThreadState *orig_tstate = PyThreadState_Get();
 	PyThreadState_Swap(sub_interpreter->python_interpreter);
 
-	PyObject* global_dict = PyModule_GetDict(sub_interpreter->main_module);
-	PyObject* local_dict = PyDict_New();
+	PyObject *global_dict = PyModule_GetDict(sub_interpreter->main_module);
+	PyObject *local_dict = PyDict_New();
 
-	PyObject* obj = PyRun_String(string, Py_eval_input, global_dict, local_dict);
-	PyObject* exception = PyErr_GetRaisedException();
+	PyObject *ret = NULL;
+	PyObject *obj = PyRun_String(string, Py_eval_input, global_dict, local_dict);
+	PyObject *exception = PyErr_GetRaisedException();
+	if (exception)
+		goto finish;
 
+	if (PyUnicode_GetLength(target_name) > 0) {
+		ret = Py_True;
+		PyObject_SetItem(global_dict, target_name, obj);
+		exception = PyErr_GetRaisedException();
+	} else {
+		ret = obj;
+	}
+finish:
 	PyThreadState_Swap(orig_tstate);
 	PyGILState_Release(gil);
 
-	assert(obj || exception);
-	if (NULL==exception) {
-		return obj;
+	assert(ret || exception);
+	if (NULL == exception) {
+		return ret;
 	} else {
 		return exception;
 	}
