@@ -62,3 +62,6 @@
   (should (py-import "test" "emacspy_test"))
   (should (py-get-object-attr "test" "emacspy_test" "test_obj" "test_obj"))
   (should (string= "test" (py-call-method "test" "test_obj" "get_string"))) )
+
+(ert-deftest ert-test-emacspy-non-existing-interpreter ()
+  (should-error (py-run-string "NON_EXISTING" "True")))
