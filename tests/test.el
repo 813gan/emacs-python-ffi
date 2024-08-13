@@ -65,3 +65,7 @@
 
 (ert-deftest ert-test-emacspy-non-existing-interpreter ()
   (should-error (py-run-string "NON_EXISTING" "True")))
+
+(ert-deftest ert-test-emacspy-duplicate-load ()
+  (should-error (progn (load "emacspy")
+                       (load "emacspy"))))

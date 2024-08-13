@@ -14,6 +14,11 @@ int emacs_module_init(struct emacs_runtime *runtime) {
 		    "ERROR: emacs_module_init: emacspy was compiled for newer version of Emacs.");
 		return 1;
 	}
+	if (Py_IsInitialized()) {
+		fprintf(stderr, "%s\n",
+		    "ERROR: emacs_module_init: emacspy is already loaded.");
+		return 2;
+	}
 	dlopen("#LIBPYTHON_NAME", RTLD_LAZY | RTLD_GLOBAL);
 	Py_Initialize();
 	init_interpreter_list();
