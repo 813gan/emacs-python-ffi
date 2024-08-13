@@ -200,7 +200,8 @@ finish:
 	}
 }
 
-PyObject* call_function (PyObject *callable_name, PyObject *args_pylist, char *interpreter_name) {
+PyObject* call_function (char *interpreter_name, PyObject *callable_name, \
+			 PyObject *target_name, PyObject *args_pylist) {
 	struct interpr *sub_interpreter = get_interpreter(interpreter_name);
 	PyGILState_STATE gil = PyGILState_Ensure();
 	PyThreadState *orig_tstate = PyThreadState_Get();
@@ -208,8 +209,9 @@ PyObject* call_function (PyObject *callable_name, PyObject *args_pylist, char *i
 
 	PyObject *global_dict = PyModule_GetDict(sub_interpreter->main_module);
 	PyObject *callable = PyObject_GetItem(global_dict, callable_name); // New reference
-	PyObject *exception = NULL;
 	PyObject *ret = NULL;
+	PyObject *obj = NULL;
+	PyObject *exception = NULL;
 
 	if (NULL == callable) {
 		PyObject *builtins_name = PyUnicode_FromString("__builtins__");
@@ -223,8 +225,18 @@ PyObject* call_function (PyObject *callable_name, PyObject *args_pylist, char *i
 
 	assert(callable);
 
-	ret = PyObject_Call(callable, args_pylist, NULL);
+	obj = PyObject_Call(callable, args_pylist, NULL);
 	exception = PyErr_GetRaisedException();
+	if (exception)
+		goto finish;
+
+	if (PyUnicode_GetLength(target_name) > 0) {
+		ret = Py_True;
+		PyObject_SetItem(global_dict, target_name, obj);
+		exception = PyErr_GetRaisedException();
+	} else {
+		ret = obj;
+	}
 
 finish:
 	Py_XDECREF(callable);

@@ -291,7 +291,7 @@ cdef extern from "subinterpreter.c":
     void make_interpreter(char*)
     object run_string(char*, char*, object)
     object call_method(char*, object, object, object, object, object)
-    object call_function(object, object, char*)
+    object call_function(char*, object, object, object)
     object import_module(object, object, char*)
     object get_global_variable(object, char*)
     object get_object_attr(char*, object, object, object)
@@ -344,10 +344,12 @@ def init():
         return ret
 
     @defun('py-call-function')
-    def call_function_python(interpreter_name, function_name, *args):
+    def call_function_python(interpreter_name, function_name, target_name='', *args):
+        if target_name:
+            target_name = target_name.to_python_type()
         args_py = tuple((arg.to_python_type() for arg in args))
-        ret = call_function(function_name.to_python_type(),  args_py, \
-                            str_elisp2c(interpreter_name))
+        ret = call_function(str_elisp2c(interpreter_name), function_name.to_python_type(), \
+                            target_name, args_py)
         if isinstance(ret, BaseException):
             raise ret
         return ret

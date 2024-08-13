@@ -33,10 +33,11 @@
   )
 
 (ert-deftest ert-test-emacspy-py-call-function ()
-  (should (eq 3 (py-call-function "test" "len" "123")))
-  (should-error (py-call-function "test" "NON-EXISTING-FUNCTION" "123")
-                :type 'python-exception)
-  )
+  (should (eq 3 (py-call-function "test" "len" nil "123")))
+  (should (py-call-function "test" "len" "call_function_test_var" "123"))
+  (should (eq 3 (py-get-global-variable  "test" "call_function_test_var")))
+  (should-error (py-call-function "test" "NON-EXISTING-FUNCTION" nil "123")
+                :type 'python-exception) )
 
 (ert-deftest ert-test-emacspy-py-get-object-attr ()
   (should (string= "0123456789" (py-get-object-attr "test" "string" "digits")))
