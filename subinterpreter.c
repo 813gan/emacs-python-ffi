@@ -1,15 +1,16 @@
-#include <Python.h>
 #include <sys/queue.h>
-#include <string.h>
+
+#include <Python.h>
 #include <assert.h>
+#include <string.h>
 
 #define MAX_INTERPRETER_NAME_LEN 100
 
 // man 3 list
 struct interpr {
-	PyThreadState* python_interpreter;
-	PyObject* main_module;
-	char* name;
+	PyThreadState *python_interpreter;
+	PyObject *main_module;
+	char *name;
 	LIST_ENTRY(interpr) entries;
 };
 
@@ -51,7 +52,7 @@ void make_interpreter(char *interpreter_name) {
 	PyGILState_STATE gil = PyGILState_Ensure();
 
 	struct interpr *maybe_existing_interpreter = get_interpreter(name);
-	if (NULL!=maybe_existing_interpreter) {
+	if (NULL != maybe_existing_interpreter) {
 		PyGILState_Release(gil);
 		return;
 	}
@@ -65,7 +66,7 @@ void make_interpreter(char *interpreter_name) {
 	if (PyStatus_Exception(status)) {
 		Py_ExitStatusException(status);
 	}
-	PyObject* main_module = PyImport_AddModule("__main__");
+	PyObject *main_module = PyImport_AddModule("__main__");
 	PyThreadState_Swap(orig_tstate);
 	PyGILState_Release(gil);
 
@@ -78,7 +79,7 @@ void make_interpreter(char *interpreter_name) {
 	return;
 }
 
-PyObject* import_module(char *interpreter_name, PyObject *name, PyObject *as) {
+PyObject *import_module(char *interpreter_name, PyObject *name, PyObject *as) {
 	struct interpr *sub_interpreter = get_interpreter(interpreter_name);
 	PyGILState_STATE gil = PyGILState_Ensure();
 	PyThreadState *orig_tstate = PyThreadState_Get();
@@ -89,7 +90,7 @@ PyObject* import_module(char *interpreter_name, PyObject *name, PyObject *as) {
 
 	PyObject *module = PyImport_Import(name); // New reference
 	PyObject *exception = PyErr_GetRaisedException();
-	if (exception) 
+	if (exception)
 		goto finish;
 
 	PyObject_SetItem(global_dict, as, module);
@@ -108,7 +109,7 @@ finish:
 	}
 }
 
-PyObject* run_string(char *interpreter_name, char *string, PyObject *target_name) {
+PyObject *run_string(char *interpreter_name, char *string, PyObject *target_name) {
 	struct interpr *sub_interpreter = get_interpreter(interpreter_name);
 	PyGILState_STATE gil = PyGILState_Ensure();
 	PyThreadState *orig_tstate = PyThreadState_Get();
@@ -142,9 +143,8 @@ finish:
 	}
 }
 
-
-PyObject *call_method(char *interpreter_name, PyObject *obj_name, PyObject *method_name, \
-		      PyObject *kwnames, PyObject *target_name, PyObject *args_pylist) {
+PyObject *call_method(char *interpreter_name, PyObject *obj_name, PyObject *method_name,
+    PyObject *kwnames, PyObject *target_name, PyObject *args_pylist) {
 	struct interpr *sub_interpreter = get_interpreter(interpreter_name);
 	PyGILState_STATE gil = PyGILState_Ensure();
 	PyThreadState *orig_tstate = PyThreadState_Get();
@@ -200,8 +200,8 @@ finish:
 	}
 }
 
-PyObject* call_function (char *interpreter_name, PyObject *callable_name, \
-			 PyObject *target_name, PyObject *args_pylist) {
+PyObject *call_function(char *interpreter_name, PyObject *callable_name, PyObject *target_name,
+    PyObject *args_pylist) {
 	struct interpr *sub_interpreter = get_interpreter(interpreter_name);
 	PyGILState_STATE gil = PyGILState_Ensure();
 	PyThreadState *orig_tstate = PyThreadState_Get();
@@ -251,30 +251,30 @@ finish:
 	}
 }
 
-PyObject* get_global_variable(char *interpreter_name, PyObject *var_name) {
+PyObject *get_global_variable(char *interpreter_name, PyObject *var_name) {
 	struct interpr *sub_interpreter = get_interpreter(interpreter_name);
 	PyGILState_STATE gil = PyGILState_Ensure();
 	PyThreadState *orig_tstate = PyThreadState_Get();
 	PyThreadState_Swap(sub_interpreter->python_interpreter);
 
-	PyObject* global_dict = PyModule_GetDict(sub_interpreter->main_module);
+	PyObject *global_dict = PyModule_GetDict(sub_interpreter->main_module);
 
-	PyObject* obj = PyObject_GetItem(global_dict, var_name); // New reference
-	PyObject* exception = PyErr_GetRaisedException();
+	PyObject *obj = PyObject_GetItem(global_dict, var_name); // New reference
+	PyObject *exception = PyErr_GetRaisedException();
 
 	PyThreadState_Swap(orig_tstate);
 	PyGILState_Release(gil);
 
 	assert(obj || exception);
-	if (NULL==exception) {
+	if (NULL == exception) {
 		return obj;
 	} else {
 		return exception; // Raised by caller
 	}
 }
 
-PyObject* get_object_attr(char *interpreter_name, PyObject *obj_name, \
-			   PyObject *attr_name, PyObject *target_name) {
+PyObject *get_object_attr(char *interpreter_name, PyObject *obj_name, PyObject *attr_name,
+    PyObject *target_name) {
 	struct interpr *sub_interpreter = get_interpreter(interpreter_name);
 	PyGILState_STATE gil = PyGILState_Ensure();
 	PyThreadState *orig_tstate = PyThreadState_Get();
@@ -321,23 +321,23 @@ finish:
 	}
 }
 
-PyObject* set_global(char *interpreter_name, PyObject *as, PyObject *obj) {
+PyObject *set_global(char *interpreter_name, PyObject *as, PyObject *obj) {
 	struct interpr *sub_interpreter = get_interpreter(interpreter_name);
 	PyGILState_STATE gil = PyGILState_Ensure();
 	PyThreadState *orig_tstate = PyThreadState_Get();
 	PyThreadState_Swap(sub_interpreter->python_interpreter);
 
-	PyObject* global_dict = PyModule_GetDict(sub_interpreter->main_module);
+	PyObject *global_dict = PyModule_GetDict(sub_interpreter->main_module);
 
 	PyObject_SetItem(global_dict, as, obj);
-	PyObject* exception = PyErr_GetRaisedException();
-	PyObject* ret = Py_True;
+	PyObject *exception = PyErr_GetRaisedException();
+	PyObject *ret = Py_True;
 
 	PyThreadState_Swap(orig_tstate);
 	PyGILState_Release(gil);
 
 	assert(obj || exception);
-	if (NULL==exception) {
+	if (NULL == exception) {
 		return ret;
 	} else {
 		return exception; // Raised by caller
