@@ -290,7 +290,7 @@ def str_elisp2c(string):
 cdef extern from "subinterpreter.c":
     void make_interpreter(char*)
     object run_string(char*, char*, object)
-    object call_method(object, object, object, object, char*)
+    object call_method(char*, object, object, object, object, object)
     object call_function(object, object, char*)
     object import_module(object, object, char*)
     object get_global_variable(object, char*)
@@ -333,10 +333,12 @@ def init():
         return ret
 
     @defun('py-call-method')
-    def call_object_python(interpreter_name, obj_name, method_name, *args):
+    def call_object_python(interpreter_name, obj_name, method_name, target_name='', *args):
+        if target_name:
+            target_name = target_name.to_python_type()
         args_py = list((arg.to_python_type() for arg in args))
-        ret = call_method(obj_name.to_python_type(), method_name.to_python_type(), args_py, \
-                          {}, str_elisp2c(interpreter_name))
+        ret = call_method(str_elisp2c(interpreter_name), obj_name.to_python_type(), \
+                          method_name.to_python_type(), {}, target_name, args_py)
         if isinstance(ret, BaseException):
             raise ret
         return ret

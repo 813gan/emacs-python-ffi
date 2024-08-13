@@ -143,8 +143,8 @@ finish:
 }
 
 
-PyObject* call_method(PyObject *obj_name, PyObject *method_name, PyObject *args_pylist,	\
-		      PyObject *kwnames, char *interpreter_name) {
+PyObject *call_method(char *interpreter_name, PyObject *obj_name, PyObject *method_name, \
+		      PyObject *kwnames, PyObject *target_name, PyObject *args_pylist) {
 	struct interpr *sub_interpreter = get_interpreter(interpreter_name);
 	PyGILState_STATE gil = PyGILState_Ensure();
 	PyThreadState *orig_tstate = PyThreadState_Get();
@@ -160,6 +160,7 @@ PyObject* call_method(PyObject *obj_name, PyObject *method_name, PyObject *args_
 	obj_with_args[0] = PyObject_GetItem(global_dict, obj_name); // New reference
 
 	PyObject *ret = NULL;
+	PyObject *obj = NULL;
 	PyObject *exception = NULL;
 
 	if (NULL == obj_with_args[0]) {
@@ -172,8 +173,18 @@ PyObject* call_method(PyObject *obj_name, PyObject *method_name, PyObject *args_
 		obj_with_args[1 + i] = PyList_GetItem(args_pylist, i);
 	}
 
-	ret = PyObject_VectorcallMethod(method_name, obj_with_args, nargsf, kwnames);
+	obj = PyObject_VectorcallMethod(method_name, obj_with_args, nargsf, kwnames);
 	exception = PyErr_GetRaisedException();
+	if (exception)
+		goto finish;
+
+	if (PyUnicode_GetLength(target_name) > 0) {
+		ret = Py_True;
+		PyObject_SetItem(global_dict, target_name, obj);
+		exception = PyErr_GetRaisedException();
+	} else {
+		ret = obj;
+	}
 finish:
 	Py_XDECREF(obj_with_args[0]);
 	free(obj_with_args);
