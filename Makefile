@@ -12,7 +12,7 @@ GCC_NO_WARN=-Wno-unused-command-line-argument
 HARDENING_FLAGS=''
 endif
 
-.PHONY: all clean test_module_assertions test
+.PHONY: all clean test_module_assertions test test_ert test_formatting
 
 all: emacspy.so
 
@@ -37,8 +37,17 @@ emacspy.so: emacspy.c stub.c subinterpreter.c
 clean:
 	rm -vf emacspy.c emacspy.so
 
-test: all
+test: test_ert test_formatting
+
+test_ert: all
 	${EMACS} -batch -l ert -l tests/test.el -f ert-run-tests-batch-and-exit
+
+test_formatting:
+ifeq ($(UNAME_S), Darwin)
+	true
+else
+	clang-format --dry-run --Werror stub.c subinterpreter.c
+endif
 
 test_module_assertions: emacspy.so
 	${EMACS} --batch --module-assertions --eval \

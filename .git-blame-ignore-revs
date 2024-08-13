@@ -1,0 +1,4 @@
+# -*- compile-command: "git config blame.ignoreRevsFile .git-blame-ignore-revs"; -*-
+
+# clang-format
+91558310c11cf06b4aeed5d4c3647d517116f9f8
