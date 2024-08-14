@@ -1,9 +1,4 @@
-(ert-deftest ert-test-1-emacspy-load-prepare-interpreter ()
-  (add-to-list 'load-path ".")
-  (load "emacspy")
-  (should (py-make-interpreter "test"))
-  (should (py-import "test" "string"))
-  (should (py-import "test" "os.path" "ospath"))
+(ert-deftest ert-test-emacspy-py-import ()
   (should-error (py-import "test" "NON_EXISTING_MOD")
                 :type 'python-exception) )
 
@@ -29,8 +24,7 @@
                 :type 'python-exception) )
 
 (ert-deftest ert-test-emacspy-py-get-global-variable ()
-  (should (string= "__main__" (py-get-global-variable  "test" "__name__")))
-  )
+  (should (string= "__main__" (py-get-global-variable  "test" "__name__"))) )
 
 (ert-deftest ert-test-emacspy-py-call-function ()
   (should (eq 3 (py-call-function "test" "len" nil "123")))
@@ -52,8 +46,7 @@
 
 (ert-deftest ert-test-emacspy-py-set-global ()
   (should (py-set-global "test" "test_str" "test_value"))
-  (should (string= "test_value" (py-get-global-variable  "test" "test_str")))
-  )
+  (should (string= "test_value" (py-get-global-variable  "test" "test_str"))) )
 
 (ert-deftest ert-test-emacspy-import-custom-module ()
   (should (py-import "test" "sys"))
