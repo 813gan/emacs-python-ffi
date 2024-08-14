@@ -45,7 +45,7 @@
                 :type 'python-exception) )
 
 (ert-deftest ert-test-emacspy-py-set-global ()
-  (should (py-set-global "test" "test_str" "test_value"))
+  (should (py-set-global "test" "test_value" "test_str"))
   (should (string= "test_value" (py-get-global-variable  "test" "test_str"))) )
 
 (ert-deftest ert-test-emacspy-import-custom-module ()
