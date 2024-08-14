@@ -59,6 +59,7 @@ struct interpr *get_interpreter(char *name) {
 void make_interpreter(char *interpreter_name) {
 	unsigned int name_len = strnlen(interpreter_name, MAX_INTERPRETER_NAME_LEN) + 1;
 	char *name = malloc(name_len);
+	assert(name);
 	strncpy(name, interpreter_name, name_len);
 
 	// https://docs.python.org/3/c-api/init.html#c.Py_NewInterpreterFromConfig
@@ -94,6 +95,7 @@ void make_interpreter(char *interpreter_name) {
 	PyGILState_Release(gil);
 
 	struct interpr *new_interpreter = malloc(sizeof(struct interpr));
+	assert(new_interpreter);
 	new_interpreter->name = name;
 	new_interpreter->python_interpreter = tstate;
 	new_interpreter->main_module = main_module;
@@ -162,6 +164,7 @@ PyObject *call_method(char *interpreter_name, PyObject *obj_name, PyObject *meth
 
 	for (unsigned int i = 0; i < nargs; ++i) {
 		obj_with_args[1 + i] = PyList_GetItem(args_pylist, i);
+		assert(obj_with_args[1 + i]);
 	}
 
 	obj = PyObject_VectorcallMethod(method_name, obj_with_args, nargsf, kwnames);
