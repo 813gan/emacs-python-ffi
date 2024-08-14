@@ -305,8 +305,10 @@ def init():
 
     @defun('py-run-string')
     def py_run_string(interpreter_name, run, target_name=''):
-        if target_name:
+        if target_name and target_name.to_python_type():
             target_name = target_name.to_python_type()
+        else:
+            target_name = ''
         ret = run_string(str.encode(interpreter_name.str()), str.encode(run.str()), target_name)
         if isinstance(ret, BaseException):
             raise ret
@@ -334,8 +336,10 @@ def init():
 
     @defun('py-call-method')
     def call_object_python(interpreter_name, obj_name, method_name, target_name='', *args):
-        if target_name:
+        if target_name and target_name.to_python_type():
             target_name = target_name.to_python_type()
+        else:
+            target_name = ''
         args_py = list((arg.to_python_type() for arg in args))
         ret = call_method(str_elisp2c(interpreter_name), obj_name.to_python_type(), \
                           method_name.to_python_type(), {}, target_name, args_py)
@@ -345,8 +349,10 @@ def init():
 
     @defun('py-call-function')
     def call_function_python(interpreter_name, function_name, target_name='', *args):
-        if target_name:
+        if target_name and target_name.to_python_type():
             target_name = target_name.to_python_type()
+        else:
+            target_name = ''
         args_py = tuple((arg.to_python_type() for arg in args))
         ret = call_function(str_elisp2c(interpreter_name), function_name.to_python_type(), \
                             target_name, args_py)
@@ -364,8 +370,10 @@ def init():
 
     @defun('py-get-object-attr')
     def get_obj_attr(interpreter_name, obj_name, attr_name, target_name=''):
-        if target_name:
+        if target_name and target_name.to_python_type():
             target_name = target_name.to_python_type()
+        else:
+            target_name = ''
         ret = get_object_attr(str_elisp2c(interpreter_name), obj_name.to_python_type(), \
                               attr_name.to_python_type(), target_name)
         if isinstance(ret, BaseException):
