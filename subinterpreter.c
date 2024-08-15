@@ -269,7 +269,7 @@ PyObject *set_global(char *interpreter_name, PyObject *obj, PyObject *as) {
 	SUBINTERPRETER_SWITCH;
 	PyObject_SetItem(global_dict, as, obj);
 	PyObject *exception = PyErr_GetRaisedException();
-	PyObject *ret = Py_True;
+	PyObject *ret = Py_NewRef(as);
 
 	SUBINTERPRETER_RETURN;
 }
