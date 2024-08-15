@@ -165,7 +165,7 @@ cdef class EmacsValue:
         my_type = self.type()
         if my_type == "string":
             return self.str()
-        elif my_type == "intiger":
+        elif my_type == "integer":
             return self.int()
 
     def __str__(self):

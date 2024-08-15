@@ -62,3 +62,11 @@
 (ert-deftest ert-test-emacspy-duplicate-load ()
   (should-error (progn (load "emacspy")
                        (load "emacspy"))))
+
+(ert-deftest ert-test-emacspy-data-int ()
+  (should (py-set-global "test" 1 "test_int"))
+  (should (eq 1 (py-get-global-variable  "test" "test_int")))
+  (should (py-set-global "test" -1 "test_int"))
+  (should (eq -1 (py-get-global-variable  "test" "test_int")))
+  (should (py-set-global "test" 0 "test_int"))
+  (should (eq 0 (py-get-global-variable  "test" "test_int"))) )
