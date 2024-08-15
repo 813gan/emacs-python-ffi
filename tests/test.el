@@ -12,7 +12,12 @@
 
 (ert-deftest ert-test-emacspy-data-bool ()
   (should (eq 't (py-run-string "test" "True")))
-  (should (eq nil (py-run-string "test" "False"))) )
+  (should (eq nil (py-run-string "test" "False")))
+
+  (should (eq 't (py-get-global-variable
+                  "test" (py-set-global "test" 't "test_bool"))))
+  (should (eq nil (py-get-global-variable
+                   "test" (py-set-global "test" () "test_bool")))) )
 
 (ert-deftest ert-test-emacspy-py-call-method ()
   (should (string= "/" (py-call-method "test" "ospath" "realpath" nil "/")))

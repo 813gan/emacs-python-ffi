@@ -167,6 +167,13 @@ cdef class EmacsValue:
             return self.str()
         elif my_type == "integer":
             return self.int()
+        elif my_type == "symbol":
+            as_str = self.sym_str()
+            if as_str == "nil":
+                return False
+            elif as_str == "t":
+                return True
+        raise ValueError("Unable to export emacs value")
 
     def __str__(self):
         return _F().prin1_to_string(self).str()
