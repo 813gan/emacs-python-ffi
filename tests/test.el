@@ -1,3 +1,5 @@
+(require 'cl)
+
 (ert-deftest ert-test-emacspy-py-import ()
   (should-error (py-import "test" "NON_EXISTING_MOD")
                 :type 'python-exception) )
@@ -75,3 +77,25 @@
                   "test" (py-set-global "test" -1 "test_int"))))
   (should (eq 0 (py-get-global-variable
                  "test" (py-set-global "test" 0 "test_int")))) )
+
+(ert-deftest ert-test-emacspy-data-list ()
+  (let ((lst (py-run-string "test" "[1, True, 2, 'test']")))
+    (should (eq 4 (length lst)))
+    (should (eq 1 (nth 0 lst)))
+    (should (eq 't (nth 1 lst)))
+    (should (eq 2 (nth 2 lst)))
+    (should (string= "test" (nth 3 lst)))
+    )
+
+  (let ((lst (py-run-string "test" "(False,)")))
+    (should (eq 1 (length lst)))
+    (should (eq nil (nth 0 lst))) )
+
+  (let ((lst (py-run-string "test" "([1, 2, 3], 'test', False)")))
+    (should (eq 3 (length lst)))
+    (let ((nested-lst (nth 0 lst)))
+      (should (listp nested-lst))
+      (should (eq 3 (length nested-lst)))
+      (should (eq 3 (nth 2 nested-lst))) )
+    (should (string= "test" (nth 1 lst)))
+    (should (eq nil (nth 2 lst))) ) )

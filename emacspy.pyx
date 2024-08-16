@@ -187,6 +187,10 @@ cdef emacs_value unwrap(obj) except *:
         obj = make_int(obj)
     elif obj is None:
         obj = nil
+    elif isinstance(obj, list):
+        obj = make_list(obj)
+    elif isinstance(obj, tuple):
+        obj = make_list(list(obj))
 
     if isinstance(obj, EmacsValue):
         return (<EmacsValue>obj).v
@@ -215,6 +219,9 @@ cpdef make_bool(bool b):
     if b:
         return EmacsValue.wrap(env.intern(env, "t".encode('utf8')))
     return nil
+
+cpdef make_list(list l):
+    return funcall(sym("list"), l)
 
 cdef emacs_value string_ptr(str s):
     cdef emacs_env* env = get_env()
