@@ -161,6 +161,28 @@ cdef class EmacsValue:
         cdef emacs_env* env = get_env()
         return EmacsValue.wrap(env.type_of(env, self.v)).sym_str()
 
+    # i hate this joggling with pointers mixed with python syntax.
+    # TODO: rewrite that in C with serious data validation?
+    def as_list(self):
+        cdef emacs_env* env = get_env()
+        fcar = unwrap(sym("car"))
+        fcdr = unwrap(sym("cdr"))
+        is_false = unwrap(sym("null"))
+        is_list = unwrap(sym("listp"))
+        ret = list()
+        cdef emacs_value cdr = self.v
+
+        if not EmacsValue.wrap(env.funcall(env, is_list, 1, &cdr)).to_python_type():
+            raise ValueError("Attepted list translation on non list")
+
+        while True:
+            car = env.funcall(env, fcar, 1, &cdr)
+            cdr = env.funcall(env, fcdr, 1, &cdr)
+            ret.append(EmacsValue.wrap(car).to_python_type())
+            if EmacsValue.wrap(env.funcall(env, is_false, 1, &cdr)).to_python_type():
+                break
+        return ret
+
     def to_python_type(self):
         my_type = self.type()
         if my_type == "string":
@@ -173,6 +195,8 @@ cdef class EmacsValue:
                 return False
             elif as_str == "t":
                 return True
+        elif my_type == "cons": # list
+            return self.as_list()
         raise ValueError("Unable to export emacs value")
 
     def __str__(self):

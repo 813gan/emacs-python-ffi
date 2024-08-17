@@ -98,4 +98,26 @@
       (should (eq 3 (length nested-lst)))
       (should (eq 3 (nth 2 nested-lst))) )
     (should (string= "test" (nth 1 lst)))
-    (should (eq nil (nth 2 lst))) ) )
+    (should (eq nil (nth 2 lst))) )
+
+  (let ((lst (py-get-global-variable
+                     "test"
+                     (py-set-global "test" '(t nil 3 "test") "test_list"))))
+    (should (eq 't (nth 0 lst)))
+    (should (eq nil (nth 1 lst)))
+    (should (eq 3 (nth 2 lst)))
+    (should (string= "test" (nth 3 lst)))
+    (should (eq 4 (length lst))) )
+
+  (let ((lst (py-get-global-variable
+                     "test"
+                     (py-set-global "test" '(("test") (1 2 3)) "test_list"))))
+    (should (eq 2 (length lst)))
+    (let ((nested-lst (nth 0 lst)))
+      (should (listp nested-lst))
+      (should (eq 1 (length nested-lst)))
+      (should (string= "test" (car nested-lst))) )
+    (let ((nested-lst (nth 1 lst)))
+      (should (listp nested-lst))
+      (should (eq 3 (length nested-lst)))
+      (should (eq 3 (nth 2 nested-lst))) ) ))
