@@ -78,6 +78,14 @@
   (should (eq 0 (py-get-global-variable
                  "test" (py-set-global "test" 0 "test_int")))) )
 
+(ert-deftest ert-test-emacspy-data-float ()
+  (should (= 0.5 (py-get-global-variable
+                 "test" (py-set-global "test" 0.5 "test_int"))))
+  (should (= -0.5 (py-get-global-variable
+                    "test" (py-set-global "test" -0.5 "test_int"))))
+  (should (= 0.0 (py-get-global-variable
+                   "test" (py-set-global "test" 0.0 "test_int")))) )
+
 (ert-deftest ert-test-emacspy-data-list ()
   (let ((lst (py-run-string "test" "[1, True, 2, 'test']")))
     (should (eq 4 (length lst)))

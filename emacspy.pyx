@@ -154,6 +154,11 @@ cdef class EmacsValue:
         cdef intmax_t i = env.extract_integer(env, self.v)
         return i
 
+    cpdef double float(self) except *:
+        cdef emacs_env* env = get_env()
+        cdef double i = env.extract_float(env, self.v)
+        return i
+
     def sym_str(self):
         return _F().symbol_name(self).str()
 
@@ -189,6 +194,8 @@ cdef class EmacsValue:
             return self.str()
         elif my_type == "integer":
             return self.int()
+        elif my_type == "float":
+            return self.float()
         elif my_type == "symbol":
             as_str = self.sym_str()
             if as_str == "nil":
@@ -209,6 +216,8 @@ cdef emacs_value unwrap(obj) except *:
         obj = make_bool(obj)
     elif isinstance(obj, int):
         obj = make_int(obj)
+    elif isinstance(obj, float):
+        obj = make_float(obj)
     elif obj is None:
         obj = nil
     elif isinstance(obj, list):
@@ -237,6 +246,10 @@ cpdef string(str s):
 cpdef make_int(int i):
     cdef emacs_env* env = get_env()
     return EmacsValue.wrap(env.make_integer(env, i))
+
+cpdef make_float(double f):
+    cdef emacs_env* env = get_env()
+    return EmacsValue.wrap(env.make_float(env, f))
 
 cpdef make_bool(bool b):
     cdef emacs_env* env = get_env()
