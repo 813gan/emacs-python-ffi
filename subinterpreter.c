@@ -58,6 +58,16 @@ struct interpr *get_interpreter(char *name) {
 }
 
 void make_interpreter(char *interpreter_name) {
+	PyGILState_STATE gil = PyGILState_Ensure();
+	PyThreadState *tstate = PyThreadState_Get();
+	PyThreadState *orig_tstate = PyThreadState_Get();
+
+	struct interpr *maybe_existing_interpreter = get_interpreter(interpreter_name);
+	if (NULL != maybe_existing_interpreter) {
+		PyGILState_Release(gil);
+		return;
+	}
+
 	unsigned int name_len = strnlen(interpreter_name, MAX_INTERPRETER_NAME_LEN) + 1;
 	char *name = malloc(name_len);
 	assert(name);
@@ -74,17 +84,6 @@ void make_interpreter(char *interpreter_name) {
 		.gil = PyInterpreterConfig_SHARED_GIL,
 	};
 
-	PyGILState_STATE gil = PyGILState_Ensure();
-
-	struct interpr *maybe_existing_interpreter = get_interpreter(name);
-	if (NULL != maybe_existing_interpreter) {
-		PyGILState_Release(gil);
-		return;
-	}
-
-	PyThreadState *tstate = PyThreadState_Get();
-
-	PyThreadState *orig_tstate = PyThreadState_Get();
 	PyThreadState_Swap(NULL);
 
 	PyStatus status = Py_NewInterpreterFromConfig(&tstate, &config);
