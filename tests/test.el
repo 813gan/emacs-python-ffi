@@ -70,6 +70,13 @@
   (should-error (progn (load "emacspy")
                        (load "emacspy"))))
 
+(ert-deftest ert-test-emacspy-create-destroy-subinterpreter ()
+  (let ((sub "test_subinterpreter"))
+    (should (py-make-interpreter sub))
+    (should (py-make-interpreter sub))
+    (should (py-destroy-interpreter sub))
+    (should-error (py-get-global-variable  sub "__name__")) ))
+
 (ert-deftest ert-test-emacspy-data-int ()
   (should (eq 1 (py-get-global-variable
                  "test" (py-set-global "test" 1 "test_int"))))

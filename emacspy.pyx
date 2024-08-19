@@ -340,6 +340,7 @@ def str_elisp2c(string):
 
 cdef extern from "subinterpreter.c":
     void make_interpreter(char*)
+    object destroy_subinterpreter(char*)
     object run_string(char*, char*, object)
     object call_method(char*, object, object, object, object, object)
     object call_function(char*, object, object, object)
@@ -353,6 +354,13 @@ def init():
     def py_make_interpreter(interpreter_name):
         make_interpreter(str.encode(interpreter_name.str()))
         return True
+
+    @defun('py-destroy-interpreter')
+    def py_destroy_interpreter(interpreter_name):
+        ret = destroy_subinterpreter(str_elisp2c(interpreter_name))
+        if isinstance(ret, BaseException):
+            raise ret
+        return ret
 
     @defun('py-run-string')
     def py_run_string(interpreter_name, run, target_name=''):

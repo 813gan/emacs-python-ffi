@@ -105,6 +105,18 @@ void make_interpreter(char *interpreter_name) {
 	return;
 }
 
+PyObject *destroy_subinterpreter(char *interpreter_name) {
+	SUBINTERPRETER_SWITCH;
+
+	Py_EndInterpreter(sub_interpreter->python_interpreter);
+	free(sub_interpreter->name);
+	LIST_REMOVE(sub_interpreter, entries);
+	free(sub_interpreter);
+
+	ret = Py_True;
+	SUBINTERPRETER_RETURN;
+}
+
 PyObject *import_module(char *interpreter_name, PyObject *name, PyObject *as) {
 	SUBINTERPRETER_SWITCH;
 	PyObject *global_dict = PyModule_GetDict(sub_interpreter->main_module);
