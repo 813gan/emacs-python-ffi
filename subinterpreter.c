@@ -17,7 +17,8 @@
 	}                                                                           \
 	PyThreadState *orig_tstate = PyThreadState_Get();                           \
 	PyThreadState_Swap(sub_interpreter->python_interpreter);                    \
-	PyObject *global_dict = PyModule_GetDict(sub_interpreter->main_module);
+	PyObject *ret = NULL;                                                       \
+	PyObject *exception = NULL;
 
 #define SUBINTERPRETER_RETURN            \
 	PyThreadState_Swap(orig_tstate); \
@@ -106,10 +107,11 @@ void make_interpreter(char *interpreter_name) {
 
 PyObject *import_module(char *interpreter_name, PyObject *name, PyObject *as) {
 	SUBINTERPRETER_SWITCH;
-	PyObject *ret = Py_True;
+	PyObject *global_dict = PyModule_GetDict(sub_interpreter->main_module);
+	ret = Py_True;
 
 	PyObject *module = PyImport_Import(name); // New reference
-	PyObject *exception = PyErr_GetRaisedException();
+	exception = PyErr_GetRaisedException();
 	if (exception)
 		goto finish;
 
@@ -123,11 +125,11 @@ finish:
 
 PyObject *run_string(char *interpreter_name, char *string, PyObject *target_name) {
 	SUBINTERPRETER_SWITCH;
+	PyObject *global_dict = PyModule_GetDict(sub_interpreter->main_module);
 	PyObject *local_dict = PyDict_New();
 
-	PyObject *ret = NULL;
 	PyObject *obj = PyRun_String(string, Py_eval_input, global_dict, local_dict);
-	PyObject *exception = PyErr_GetRaisedException();
+	exception = PyErr_GetRaisedException();
 	if (exception)
 		goto finish;
 
@@ -145,6 +147,7 @@ finish:
 PyObject *call_method(char *interpreter_name, PyObject *obj_name, PyObject *method_name,
     PyObject *kwnames, PyObject *target_name, PyObject *args_pylist) {
 	SUBINTERPRETER_SWITCH;
+	PyObject *global_dict = PyModule_GetDict(sub_interpreter->main_module);
 	Py_ssize_t nargs = PyList_Size(args_pylist);
 	size_t nargsf = 1 + PyList_Size(args_pylist); // TODO sign to unsign conversion??
 	size_t size_obj_args = nargsf * sizeof(PyObject);
@@ -152,9 +155,7 @@ PyObject *call_method(char *interpreter_name, PyObject *obj_name, PyObject *meth
 	assert(obj_with_args);
 	obj_with_args[0] = PyObject_GetItem(global_dict, obj_name); // New reference
 
-	PyObject *ret = NULL;
 	PyObject *obj = NULL;
-	PyObject *exception = NULL;
 
 	if (NULL == obj_with_args[0]) {
 		PyErr_SetObject(PyExc_KeyError, obj_name);
@@ -188,10 +189,9 @@ finish:
 PyObject *call_function(char *interpreter_name, PyObject *callable_name, PyObject *target_name,
     PyObject *args_pylist) {
 	SUBINTERPRETER_SWITCH;
+	PyObject *global_dict = PyModule_GetDict(sub_interpreter->main_module);
 	PyObject *callable = PyObject_GetItem(global_dict, callable_name); // New reference
-	PyObject *ret = NULL;
 	PyObject *obj = NULL;
-	PyObject *exception = NULL;
 
 	if (NULL == callable) {
 		PyObject *builtins_name = PyUnicode_FromString("__builtins__");
@@ -225,8 +225,9 @@ finish:
 
 PyObject *get_global_variable(char *interpreter_name, PyObject *var_name) {
 	SUBINTERPRETER_SWITCH;
-	PyObject *ret = PyObject_GetItem(global_dict, var_name); // New reference
-	PyObject *exception = PyErr_GetRaisedException();
+	PyObject *global_dict = PyModule_GetDict(sub_interpreter->main_module);
+	ret = PyObject_GetItem(global_dict, var_name); // New reference
+	exception = PyErr_GetRaisedException();
 
 	SUBINTERPRETER_RETURN;
 }
@@ -234,9 +235,8 @@ PyObject *get_global_variable(char *interpreter_name, PyObject *var_name) {
 PyObject *get_object_attr(char *interpreter_name, PyObject *obj_name, PyObject *attr_name,
     PyObject *target_name) {
 	SUBINTERPRETER_SWITCH;
+	PyObject *global_dict = PyModule_GetDict(sub_interpreter->main_module);
 	PyObject *obj = NULL;
-	PyObject *ret = NULL;
-	PyObject *exception = NULL;
 
 	PyObject *holding_obj = PyObject_GetItem(global_dict, obj_name); // New reference
 	if (NULL == holding_obj) {
@@ -267,9 +267,10 @@ finish:
 
 PyObject *set_global(char *interpreter_name, PyObject *obj, PyObject *as) {
 	SUBINTERPRETER_SWITCH;
+	PyObject *global_dict = PyModule_GetDict(sub_interpreter->main_module);
 	PyObject_SetItem(global_dict, as, obj);
-	PyObject *exception = PyErr_GetRaisedException();
-	PyObject *ret = Py_NewRef(as);
+	exception = PyErr_GetRaisedException();
+	ret = Py_NewRef(as);
 
 	SUBINTERPRETER_RETURN;
 }
