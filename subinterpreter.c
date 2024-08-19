@@ -116,6 +116,18 @@ PyObject *destroy_subinterpreter(char *interpreter_name) {
 	SUBINTERPRETER_RETURN;
 }
 
+PyObject *list_subinterpreters() {
+	struct interpr *iter;
+	PyObject *ret_list = PyList_New(0);
+
+	LIST_FOREACH(iter, &head, entries) {
+		PyObject *interpreter_name = PyUnicode_FromString(iter->name);
+		PyList_Append(ret_list, interpreter_name);
+		Py_DECREF(interpreter_name);
+	}
+	return ret_list;
+}
+
 PyObject *import_module(char *interpreter_name, PyObject *name, PyObject *as) {
 	SUBINTERPRETER_SWITCH;
 	PyObject *global_dict = PyModule_GetDict(sub_interpreter->main_module);

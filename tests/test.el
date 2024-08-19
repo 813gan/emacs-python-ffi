@@ -77,6 +77,12 @@
     (should (py-destroy-interpreter sub))
     (should-error (py-get-global-variable  sub "__name__")) ))
 
+(ert-deftest ert-test-emacspy-list-subiterpreters ()
+  (let ((ret (py-list-interpreters)))
+    (should (listp ret))
+    (should (eq 1 (length ret)))
+    (should (string= "test" (nth 0 ret))) ))
+
 (ert-deftest ert-test-emacspy-data-int ()
   (should (eq 1 (py-get-global-variable
                  "test" (py-set-global "test" 1 "test_int"))))
