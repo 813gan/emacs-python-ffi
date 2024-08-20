@@ -31,7 +31,8 @@
                 :type 'python-exception) )
 
 (ert-deftest ert-test-emacspy-py-get-global-variable ()
-  (should (string= "__main__" (py-get-global-variable  "test" "__name__"))) )
+  (should (string= "__main__" (py-get-global-variable  "test" "__name__")))
+  (should-error (py-get-global-variable  "test" "NON_EXISTING_VARIABLE")) )
 
 (ert-deftest ert-test-emacspy-py-call-function ()
   (should (eq 3 (py-call-function "test" "len" nil "123")))
@@ -97,7 +98,12 @@
   (should (= -0.5 (py-get-global-variable
                     "test" (py-set-global "test" -0.5 "test_int"))))
   (should (= 0.0 (py-get-global-variable
-                   "test" (py-set-global "test" 0.0 "test_int")))) )
+                  "test" (py-set-global "test" 0.0 "test_int")))) )
+
+(ert-deftest ert-test-emacspy-data-str ()
+  (should (string= "" (py-run-string "test" "''")))
+  (should (string= "str" (py-run-string "test" "'str'")))
+  (should (string= "субтитри" (py-run-string "test" "'субтитри'"))) )
 
 (ert-deftest ert-test-emacspy-data-list ()
   (let ((lst (py-run-string "test" "[1, True, 2, 'test']")))
@@ -105,8 +111,7 @@
     (should (eq 1 (nth 0 lst)))
     (should (eq 't (nth 1 lst)))
     (should (eq 2 (nth 2 lst)))
-    (should (string= "test" (nth 3 lst)))
-    )
+    (should (string= "test" (nth 3 lst))) )
 
   (let ((lst (py-run-string "test" "(False,)")))
     (should (eq 1 (length lst)))
