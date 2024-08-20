@@ -216,7 +216,7 @@ PyObject *call_function(char *interpreter_name, PyObject *callable_name, PyObjec
 	if (NULL == callable) {
 		PyObject *builtins_name = PyUnicode_FromString("__builtins__");
 		PyObject *builtins = PyObject_GetItem(global_dict, builtins_name);
-		callable = PyObject_GetAttr(builtins, callable_name);
+		callable = PyObject_GetAttr(builtins, callable_name); // New reference
 	}
 
 	exception = PyErr_GetRaisedException();
@@ -225,7 +225,7 @@ PyObject *call_function(char *interpreter_name, PyObject *callable_name, PyObjec
 
 	assert(callable);
 
-	obj = PyObject_Call(callable, args_pylist, NULL);
+	obj = PyObject_Call(callable, args_pylist, NULL); // New reference
 	exception = PyErr_GetRaisedException();
 	if (exception)
 		goto finish;
@@ -239,6 +239,7 @@ finish:
 PyObject *get_global_variable(char *interpreter_name, PyObject *var_name) {
 	SUBINTERPRETER_SWITCH;
 	PyObject *global_dict = PyModule_GetDict(sub_interpreter->main_module);
+	// Doc don't mention it but it will raise exception on wrong key
 	ret = PyObject_GetItem(global_dict, var_name); // New reference
 	exception = PyErr_GetRaisedException();
 

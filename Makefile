@@ -8,11 +8,6 @@ HARDENING_FLAGS := -fstack-protector -fstack-clash-protection -fcf-protection \
 	-D_FORTIFY_SOURCE=2 -ftrapv
 OPTIMALISATION_FLAGS := -O2
 
-ifeq ("$(BUILD)","DEBUG")
-HARDENING_FLAGS=
-OPTIMALISATION_FLAGS=
-endif
-
 UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S), Darwin) # Clang does not support some gcc options
 GCC_NO_WARN=-Wno-unused-command-line-argument
@@ -60,8 +55,9 @@ test_module_assertions: emacspy.so
 	${EMACS} --batch --module-assertions --eval \
 		'(progn (add-to-list '\''load-path ".") (load "emacspy"))'
 
-# Run `make clean && BUILD=DEBUG make all` first.
-test_valgrind: all
+# https://stackoverflow.com/questions/20112989/how-to-use-valgrind-with-python
+test_valgrind: OPTIMALISATION_FLAGS=
+test_valgrind: clean all
 	valgrind --tool=memcheck --leak-check=full \
 		${EMACS} -batch -l tests/prepare-tests.el -l ert -l tests/test.el \
 			-f ert-run-tests-batch-and-exit
