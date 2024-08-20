@@ -20,6 +20,15 @@
 	PyObject *ret = NULL;                                                       \
 	PyObject *exception = NULL;
 
+#define SETUP_RET                                                \
+	if (PyUnicode_GetLength(target_name) > 0) {              \
+		ret = Py_True;                                   \
+		PyObject_SetItem(global_dict, target_name, obj); \
+		exception = PyErr_GetRaisedException();          \
+	} else {                                                 \
+		ret = obj;                                       \
+	}
+
 #define SUBINTERPRETER_RETURN            \
 	PyThreadState_Swap(orig_tstate); \
 	PyGILState_Release(gil);         \
@@ -156,13 +165,7 @@ PyObject *run_string(char *interpreter_name, char *string, PyObject *target_name
 	if (exception)
 		goto finish;
 
-	if (PyUnicode_GetLength(target_name) > 0) {
-		ret = Py_True;
-		PyObject_SetItem(global_dict, target_name, obj);
-		exception = PyErr_GetRaisedException();
-	} else {
-		ret = obj;
-	}
+	SETUP_RET;
 finish:
 	SUBINTERPRETER_RETURN;
 }
@@ -196,13 +199,7 @@ PyObject *call_method(char *interpreter_name, PyObject *obj_name, PyObject *meth
 	if (exception)
 		goto finish;
 
-	if (PyUnicode_GetLength(target_name) > 0) {
-		ret = Py_True;
-		PyObject_SetItem(global_dict, target_name, obj);
-		exception = PyErr_GetRaisedException();
-	} else {
-		ret = obj;
-	}
+	SETUP_RET;
 finish:
 	Py_XDECREF(obj_with_args[0]);
 	free(obj_with_args);
@@ -233,14 +230,7 @@ PyObject *call_function(char *interpreter_name, PyObject *callable_name, PyObjec
 	if (exception)
 		goto finish;
 
-	if (PyUnicode_GetLength(target_name) > 0) {
-		ret = Py_True;
-		PyObject_SetItem(global_dict, target_name, obj);
-		exception = PyErr_GetRaisedException();
-	} else {
-		ret = obj;
-	}
-
+	SETUP_RET;
 finish:
 	Py_XDECREF(callable);
 	SUBINTERPRETER_RETURN;
@@ -275,14 +265,7 @@ PyObject *get_object_attr(char *interpreter_name, PyObject *obj_name, PyObject *
 		goto finish;
 	}
 
-	if (PyUnicode_GetLength(target_name) > 0) {
-		ret = Py_True;
-		PyObject_SetItem(global_dict, target_name, obj);
-		exception = PyErr_GetRaisedException();
-	} else {
-		ret = obj;
-	}
-
+	SETUP_RET;
 finish:
 	Py_XDECREF(holding_obj);
 	SUBINTERPRETER_RETURN;
