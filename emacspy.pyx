@@ -111,6 +111,7 @@ _dealloc_queue = []
 cdef extern from "stdlib.h":
     void abort()
     void* malloc(size_t s)
+    void free(void*)
 
 cdef emacs_env* get_env() except *:
     if current_env == NULL:
@@ -147,7 +148,9 @@ cdef class EmacsValue:
         if not env.copy_string_contents(env, self.v, buf, &size):
             raise TypeError('value is not a string')
         assert size > 0
-        return buf[:size - 1].decode('utf8')
+        ret = buf[:size - 1].decode('utf8')
+        free(buf)
+        return ret
 
     cpdef int int(self) except *:
         cdef emacs_env* env = get_env()
