@@ -25,6 +25,7 @@
 		ret = Py_True;                                   \
 		PyObject_SetItem(global_dict, target_name, obj); \
 		exception = PyErr_GetRaisedException();          \
+		Py_DECREF(obj);                                  \
 	} else {                                                 \
 		ret = obj;                                       \
 	}
@@ -36,6 +37,7 @@
 	if (NULL == exception) {         \
 		return ret;              \
 	} else {                         \
+		Py_XDECREF(ret);         \
 		return exception;        \
 	}
 
@@ -217,6 +219,7 @@ PyObject *call_function(char *interpreter_name, PyObject *callable_name, PyObjec
 		PyErr_Clear();
 		PyObject *builtins_name = PyUnicode_FromString("__builtins__");
 		PyObject *builtins = PyObject_GetItem(global_dict, builtins_name);
+		Py_DECREF(builtins_name);
 		callable = PyObject_GetAttr(builtins, callable_name); // New reference
 	}
 
