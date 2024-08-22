@@ -4,3 +4,4 @@
 /emacspy.h
 .mypy_cache
 *.pyc
+/.valgrind-python.supp

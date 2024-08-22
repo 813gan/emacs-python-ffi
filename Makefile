@@ -48,16 +48,23 @@ test_ert: all
 	${EMACS} -batch -l tests/prepare-tests.el -l ert -l tests/test.el \
 		-f ert-run-tests-batch-and-exit
 
+# https://stackoverflow.com/questions/20112989/how-to-use-valgrind-with-python
+test_valgrind: OPTIMALISATION_FLAGS=
+test_valgrind: clean all .valgrind-python.supp
+	PYTHONMALLOC=malloc valgrind --tool=memcheck --suppressions=.valgrind-python.supp \
+		--leak-check=full --show-leak-kinds=all \
+		${EMACS} -batch -l tests/prepare-tests.el -l ert -l tests/test.el \
+			-f ert-run-tests-batch-and-exit
+
+.valgrind-python.supp:
+	wget -O .valgrind-python.supp \
+		"https://raw.githubusercontent.com/python/cpython/main/Misc/valgrind-python.supp"
+	echo "WARNING: Read instructions from top of .valgrind-python.supp"
+	false
+
 test_formatting:
 	${CLANGFORMAT} --dry-run --Werror stub.c subinterpreter.c
 
 test_module_assertions: emacspy.so
 	${EMACS} --batch --module-assertions --eval \
 		'(progn (add-to-list '\''load-path ".") (load "emacspy"))'
-
-# https://stackoverflow.com/questions/20112989/how-to-use-valgrind-with-python
-test_valgrind: OPTIMALISATION_FLAGS=
-test_valgrind: clean all
-	valgrind --tool=memcheck --leak-check=full \
-		${EMACS} -batch -l tests/prepare-tests.el -l ert -l tests/test.el \
-			-f ert-run-tests-batch-and-exit
