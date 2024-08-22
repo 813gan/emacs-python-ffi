@@ -412,7 +412,7 @@ def init():
             target_name = ''
         args_py = list((arg.to_python_type() for arg in args))
         ret = call_method(str_elisp2c(interpreter_name), obj_name.to_python_type(), \
-                          method_name.to_python_type(), {}, target_name, args_py)
+                          method_name.to_python_type(), tuple(), target_name, args_py)
         if isinstance(ret, BaseException):
             raise ret
         return ret

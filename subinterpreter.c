@@ -214,6 +214,7 @@ PyObject *call_function(char *interpreter_name, PyObject *callable_name, PyObjec
 	PyObject *obj = NULL;
 
 	if (NULL == callable) {
+		PyErr_Clear();
 		PyObject *builtins_name = PyUnicode_FromString("__builtins__");
 		PyObject *builtins = PyObject_GetItem(global_dict, builtins_name);
 		callable = PyObject_GetAttr(builtins, callable_name); // New reference
