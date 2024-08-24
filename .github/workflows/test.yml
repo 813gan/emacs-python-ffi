@@ -12,7 +12,6 @@ jobs:
   build:
     runs-on: ${{ matrix.os }}
     strategy:
-      fail-fast: true
       matrix:
         os: [ubuntu-latest]
         emacs_version: [27.2, 28.2, 29.3, snapshot]
@@ -30,5 +29,16 @@ jobs:
       with:
         python-version: ${{ matrix.python_version }}
         cache: 'pip'
+    # https://github.com/itamarst/gha-upload-cores/blob/main/.github/workflows/build.yml
+    - run: |
+        sudo mkdir /cores
+        sudo chmod 777 /cores
+        # Core filenames will be of the form executable.pid.timestamp:
+        sudo bash -c 'echo "/cores/%e.%p.%t" > /proc/sys/kernel/core_pattern'
     - run: 'pip install -r requirements.txt'
     - run: 'make test'
+    - uses: actions/upload-artifact@v4
+      if: ${{ failure() }}  # Run only if something went wrong
+      with:
+        name: cores
+        path: /cores

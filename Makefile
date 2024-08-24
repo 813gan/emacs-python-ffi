@@ -45,6 +45,7 @@ clean:
 test: test_ert test_formatting
 
 test_ert: all
+	ulimit -c unlimited && \
 	${EMACS} -batch -l tests/prepare-tests.el -l ert -l tests/test.el \
 		-f ert-run-tests-batch-and-exit
 
