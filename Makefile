@@ -46,7 +46,7 @@ test: test_ert test_formatting
 
 test_ert: all
 	ulimit -c unlimited && \
-	${EMACS} -batch -l tests/prepare-tests.el -l ert -l tests/test.el \
+	${EMACS} --module-assertions -batch -l tests/prepare-tests.el -l ert -l tests/test.el \
 		-f ert-run-tests-batch-and-exit
 
 # https://stackoverflow.com/questions/20112989/how-to-use-valgrind-with-python
