@@ -19,28 +19,28 @@ endif
 
 .PHONY: all clean test_module_assertions test test_ert test_formatting test_valgrind
 
-all: emacspy.so
+all: emacspy-module.so
 
 emacspy.c: emacspy.pyx
 	cython emacspy.pyx
 
 # https://github.com/grisha/mod_python/issues/81#issuecomment-551655070
-emacspy.so: BLDLIBRARY=$(shell ${PYTHON} -c \
+emacspy-module.so: BLDLIBRARY=$(shell ${PYTHON} -c \
 	 'import sysconfig; print(sysconfig.get_config_var("BLDLIBRARY"))')
-emacspy.so: PKGCONFIG_PATH=$(shell ${PYTHON} -c \
+emacspy-module.so: PKGCONFIG_PATH=$(shell ${PYTHON} -c \
 	 'import sysconfig; print(sysconfig.get_config_var("LIBPC"))')
-emacspy.so: LIBPYTHON_NAME=$(shell ${PYTHON} -c \
+emacspy-module.so: LIBPYTHON_NAME=$(shell ${PYTHON} -c \
 	 'import sysconfig; print(sysconfig.get_config_var("LDLIBRARY"))')
-emacspy.so: emacspy.c stub.c subinterpreter.c
+emacspy-module.so: emacspy.c stub.c subinterpreter.c
 	gcc -fPIC -g -DCYTHON_FAST_THREAD_STATE=0 -DCYTHON_PEP489_MULTI_PHASE_INIT=0 \
 		-Wall -Wextra -Werror ${OPTIMALISATION_FLAGS} ${HARDENING_FLAGS} ${GCC_NO_WARN} \
 		emacspy.c stub.c \
 		${BLDLIBRARY} -DLIBPYTHON_NAME=$(LIBPYTHON_NAME) \
 		-shared $(shell pkg-config --cflags --libs $(PKGCONFIG_PATH)"/python3-embed.pc") \
-		-o emacspy.so
+		-o emacspy-module.so
 
 clean:
-	rm -vf emacspy.c emacspy.so
+	rm -vf emacspy.c emacspy-module.so
 
 test: test_ert test_formatting
 
@@ -65,6 +65,6 @@ test_valgrind: clean all .valgrind-python.supp
 test_formatting:
 	${CLANGFORMAT} --dry-run --Werror stub.c subinterpreter.c
 
-test_module_assertions: emacspy.so
+test_module_assertions: emacspy-module.so
 	${EMACS} --batch --module-assertions --eval \
 		'(progn (add-to-list '\''load-path ".") (load "emacspy"))'
