@@ -459,7 +459,7 @@ def init():
         return ret
 
     _F().define_error(sym('python-exception'), "Python error")
-    _F().provide(sym('emacspy'))
+    _F().provide(sym('emacspy-module'))
 
 cdef public int emacs_module_init_py(emacs_runtime* runtime):
     global current_env, nil

@@ -68,8 +68,8 @@
   (should-error (py-run-string "NON_EXISTING" "True")))
 
 (ert-deftest ert-test-emacspy-duplicate-load ()
-  (should-error (progn (load "emacspy")
-                       (load "emacspy"))))
+  (should-error (progn (load "emacspy-module")
+                       (load "emacspy-module"))))
 
 (ert-deftest ert-test-emacspy-create-destroy-subinterpreter ()
   (let ((sub "test_subinterpreter"))
