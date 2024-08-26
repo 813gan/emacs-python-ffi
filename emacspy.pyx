@@ -126,6 +126,8 @@ cdef class EmacsValue:
 
     @staticmethod
     cdef EmacsValue wrap(emacs_value v):
+        if NULL == v:
+            raise ValueError("NULL in emacs value")
         wrapper = EmacsValue()
         cdef emacs_env* env = get_env()
         wrapper.v = env.make_global_ref(env, v)
