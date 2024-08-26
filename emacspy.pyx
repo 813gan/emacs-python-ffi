@@ -191,6 +191,19 @@ cdef class EmacsValue:
                 break
         return ret
 
+    def as_dict(self): # aka hash table
+        cdef emacs_env* env = get_env()
+        hash_table_to_lists = unwrap(sym("emacspy--hash-table-to-lists"))
+        is_hash = unwrap(sym("hash-table-p"))
+        cdef emacs_value hash_src = self.v
+
+        if not EmacsValue.wrap(env.funcall(env, is_hash, 1, &hash_src)).to_python_type():
+            raise ValueError("Attepted hash translation on non hash")
+
+        keys, values = \
+            EmacsValue.wrap(env.funcall(env, hash_table_to_lists, 1, &hash_src)).to_python_type()
+        return dict(zip(keys, values))
+
     def to_python_type(self):
         my_type = self.type()
         if my_type == "string":
@@ -207,6 +220,8 @@ cdef class EmacsValue:
                 return True
         elif my_type == "cons": # list
             return self.as_list()
+        elif my_type == "hash-table":
+            return self.as_dict()
         raise ValueError("Unable to export emacs value")
 
     def __str__(self):

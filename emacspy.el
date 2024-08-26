@@ -14,6 +14,16 @@
 
 ;;; Code:
 
+(eval-when-compile (require 'subr-x))
+
+(defun emacspy--hash-table-to-lists (hash)
+  "Utility function that convert `HASH' into (list keys values)."
+  (let ((keys (hash-table-keys hash))
+	(values nil))
+    (setq values
+	  (mapcar (lambda (key) (gethash key hash)) keys))
+    (list keys values) ))
+
 (require 'emacspy-module)
 
 ;;; emacspy.el ends here
