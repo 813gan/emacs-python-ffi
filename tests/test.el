@@ -10,7 +10,8 @@
                 :type 'python-exception)
   (should (py-run-string "test" "ospath.realpath('/')" "run_string_test_var"))
   (should (string= "/" (py-get-global-variable "test" "run_string_test_var")))
-  )
+  (should (py-run-string "test" "1==1"))
+  (should-not (py-run-string "test" "1==2")) )
 
 (ert-deftest ert-test-emacspy-data-bool ()
   (should (eq 't (py-run-string "test" "True")))
@@ -147,3 +148,20 @@
       (should (listp nested-lst))
       (should (eq 3 (length nested-lst)))
       (should (eq 3 (nth 2 nested-lst))) ) ))
+
+(ert-deftest ert-test-emacspy-data-hash ()
+  (should (functionp 'emacspy--hash-table-to-lists))
+  (let ((hash (make-hash-table))
+        (nhash (make-hash-table)))
+    (puthash 1 "test" hash)
+    (puthash 2 nil hash)
+    (puthash "list" '(1) hash)
+
+    (puthash "key" 1 nhash)
+    (puthash "hash" nhash hash)
+
+    (should (py-set-global "test" hash "test_hash"))
+    (should (py-run-string "test" "test_hash[1]=='test'"))
+    (should (py-run-string "test" "test_hash[2]==False"))
+    (should (py-run-string "test" "test_hash['list'][0]==1"))
+    (should (py-run-string "test" "test_hash['hash']['key']==1")) ))
