@@ -5,7 +5,7 @@ endif
 CLANGFORMAT := clang-format
 
 HARDENING_FLAGS := -fstack-protector -fstack-clash-protection -fcf-protection \
-	-D_FORTIFY_SOURCE=2 -ftrapv
+	-D_FORTIFY_SOURCE=2 -ftrapv -Wformat=2 -Wjump-misses-init
 OPTIMALISATION_FLAGS := -O2
 
 UNAME_S := $(shell uname -s)
@@ -45,7 +45,7 @@ clean:
 test: test_ert test_formatting
 
 test_ert: all
-	${EMACS} -batch -l tests/prepare-tests.el -l ert -l tests/test.el \
+	ulimit -c unlimited; ${EMACS} -batch -l tests/prepare-tests.el -l ert -l tests/test.el \
 		-f ert-run-tests-batch-and-exit
 
 # https://stackoverflow.com/questions/20112989/how-to-use-valgrind-with-python
