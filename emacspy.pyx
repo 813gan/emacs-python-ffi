@@ -359,7 +359,7 @@ def str_elisp2c(string):
     return str.encode(string.str())
 
 cdef extern from "subinterpreter.c":
-    void make_interpreter(char*)
+    object make_interpreter(char*)
     object destroy_subinterpreter(char*)
     object list_subinterpreters()
     object run_string(char*, char*, object)
@@ -373,7 +373,8 @@ cdef extern from "subinterpreter.c":
 def init():
     @defun('py-make-interpreter')
     def py_make_interpreter(interpreter_name):
-        make_interpreter(str.encode(interpreter_name.str()))
+        if not make_interpreter(str.encode(interpreter_name.str())):
+            raise ValueError(f"Failed to create subinterpreter '{interpreter_name}'")
         return True
 
     @defun('py-destroy-interpreter')

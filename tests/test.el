@@ -79,6 +79,13 @@
     (should (py-destroy-interpreter sub))
     (should-error (py-get-global-variable  sub "__name__")) ))
 
+(ert-deftest ert-test-emacspy-subinterpreter-isolation () ;; Test if we really switch
+  (let ((sub "test2"))
+    (should (py-make-interpreter sub))
+    (should (py-set-global sub 't "testvarisolation"))
+    (should-error (py-get-global-variable "test" "testvarisolation"))
+    (should (py-destroy-interpreter sub)) ))
+
 (ert-deftest ert-test-emacspy-list-subiterpreters ()
   (let ((ret (py-list-interpreters)))
     (should (listp ret))
