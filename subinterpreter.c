@@ -68,15 +68,15 @@ struct interpr *get_interpreter(char *name) {
 	return ret;
 }
 
-void make_interpreter(char *interpreter_name) {
+PyObject *make_interpreter(char *interpreter_name) {
 	PyGILState_STATE gil = PyGILState_Ensure();
-	PyThreadState *tstate = PyThreadState_Get();
+	PyThreadState *tstate = NULL;
 	PyThreadState *orig_tstate = PyThreadState_Get();
 
 	struct interpr *maybe_existing_interpreter = get_interpreter(interpreter_name);
 	if (NULL != maybe_existing_interpreter) {
 		PyGILState_Release(gil);
-		return;
+		return Py_True;
 	}
 
 	unsigned int name_len = strnlen(interpreter_name, MAX_INTERPRETER_NAME_LEN) + 1;
@@ -84,23 +84,12 @@ void make_interpreter(char *interpreter_name) {
 	assert(name);
 	strncpy(name, interpreter_name, name_len);
 
-	// https://docs.python.org/3/c-api/init.html#c.Py_NewInterpreterFromConfig
-	const PyInterpreterConfig config = {
-		.use_main_obmalloc = 1,
-		.allow_fork = 0,
-		.allow_exec = 0,
-		.allow_threads = 1,
-		.allow_daemon_threads = 0,
-		.check_multi_interp_extensions = 1,
-		.gil = PyInterpreterConfig_SHARED_GIL,
-	};
-
-	PyThreadState_Swap(NULL);
-
-	PyStatus status = Py_NewInterpreterFromConfig(&tstate, &config);
-	if (PyStatus_Exception(status)) {
-		Py_ExitStatusException(status);
+	tstate = Py_NewInterpreter();
+	if (NULL == tstate) {
+		return Py_False;
 	}
+	PyThreadState_Swap(tstate);
+
 	PyObject *main_module = PyImport_AddModule("__main__");
 	PyThreadState_Swap(orig_tstate);
 	PyGILState_Release(gil);
@@ -112,7 +101,7 @@ void make_interpreter(char *interpreter_name) {
 	new_interpreter->main_module = main_module;
 	LIST_INSERT_HEAD(&head, new_interpreter, entries);
 
-	return;
+	return Py_True;
 }
 
 PyObject *destroy_subinterpreter(char *interpreter_name) {
