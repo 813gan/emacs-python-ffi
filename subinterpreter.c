@@ -6,6 +6,16 @@
 
 #define MAX_INTERPRETER_NAME_LEN 100
 
+#ifdef PYTHON311OLDER
+#define PyErr_GetRaisedException()                                   \
+	({                                                           \
+		PyObject *type, *value, *traceback;                  \
+		PyErr_Fetch(&type, &value, &traceback);              \
+		PyErr_NormalizeException(&type, &value, &traceback); \
+		value;                                               \
+	})
+#endif
+
 #define SUBINTERPRETER_SWITCH                                                       \
 	struct interpr *sub_interpreter = get_interpreter(interpreter_name);        \
 	PyGILState_STATE gil = PyGILState_Ensure();                                 \
