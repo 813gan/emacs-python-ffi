@@ -17,6 +17,13 @@ CLANGFORMAT := true # darwin form gh CI have no clang-format
 endif
 endif
 
+ifeq (, $(shell which pkg-config))
+$(error "No pkg-config found.")
+endif
+
+IS_PYTHON_OLD := $(shell ${PYTHON} -c 'import platform;from packaging import version as v; \
+print("-DPYTHON311OLDER") if (v.parse(platform.python_version()) < v.parse("3.12.0")) else exit(0)')
+
 .PHONY: all clean test_module_assertions test test_ert test_formatting test_valgrind
 
 all: emacspy-module.so
@@ -32,7 +39,7 @@ emacspy-module.so: PKGCONFIG_PATH=$(shell ${PYTHON} -c \
 emacspy-module.so: LIBPYTHON_NAME=$(shell ${PYTHON} -c \
 	 'import sysconfig; print(sysconfig.get_config_var("LDLIBRARY"))')
 emacspy-module.so: emacspy.c stub.c subinterpreter.c
-	gcc -fPIC -g -DCYTHON_FAST_THREAD_STATE=0 -DCYTHON_PEP489_MULTI_PHASE_INIT=0 \
+	gcc -fPIC -g -DCYTHON_FAST_THREAD_STATE=0 -DCYTHON_PEP489_MULTI_PHASE_INIT=0 ${IS_PYTHON_OLD} \
 		-Wall -Wextra -Werror ${OPTIMALISATION_FLAGS} ${HARDENING_FLAGS} ${GCC_NO_WARN} \
 		emacspy.c stub.c \
 		${BLDLIBRARY} -DLIBPYTHON_NAME=$(LIBPYTHON_NAME) \
