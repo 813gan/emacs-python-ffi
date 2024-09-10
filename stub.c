@@ -20,7 +20,20 @@ int emacs_module_init(struct emacs_runtime *runtime) {
 		return 2;
 	}
 	dlopen("#LIBPYTHON_NAME", RTLD_LAZY | RTLD_GLOBAL);
-	Py_Initialize();
+
+	PyConfig config;
+	PyStatus status;
+
+	PyConfig_InitPythonConfig(&config);
+	status = PyConfig_SetString(&config, &config.home, L"#BASE_PREFIX");
+	if (PyStatus_Exception(status)) {
+		return 3;
+	}
+	status = Py_InitializeFromConfig(&config);
+	if (PyStatus_Exception(status)) {
+		return 4;
+	}
+
 	init_interpreter_list();
 	PyInit_emacspy();
 	int result = emacs_module_init_py(runtime);
