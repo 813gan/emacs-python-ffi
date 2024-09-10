@@ -43,9 +43,12 @@ emacspy-module.so: PKGCONFIG_PATH=$(shell ${PYTHON} -c \
 	 'import sysconfig; print(sysconfig.get_config_var("LIBPC"))')
 emacspy-module.so: LIBPYTHON_NAME=$(shell ${PYTHON} -c \
 	 'import sysconfig; print(sysconfig.get_config_var("LDLIBRARY"))')
+emacspy-module.so: BASE_PREFIX=$(shell ${PYTHON} -c \
+	 'import sys; print(sys.base_prefix)')
 emacspy-module.so: emacspy.c stub.c subinterpreter.c
-	gcc -fPIC -g -DCYTHON_FAST_THREAD_STATE=0 -DCYTHON_PEP489_MULTI_PHASE_INIT=0 ${IS_PYTHON_OLD} \
+	gcc -fPIC -g -DCYTHON_FAST_THREAD_STATE=0 -DCYTHON_PEP489_MULTI_PHASE_INIT=0 \
 		-Wall -Wextra -Werror ${OPTIMALISATION_FLAGS} ${HARDENING_FLAGS} ${GCC_NO_WARN} \
+		${IS_PYTHON_OLD} -DBASE_PREFIX=${BASE_PREFIX} \
 		emacspy.c stub.c \
 		${BLDLIBRARY} -DLIBPYTHON_NAME=$(LIBPYTHON_NAME) \
 		-shared $(shell pkg-config --cflags --libs $(PKGCONFIG_PATH)"/python3-embed.pc") \
