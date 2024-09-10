@@ -28,7 +28,9 @@
 	PyThreadState *orig_tstate = PyThreadState_Get();                           \
 	PyThreadState_Swap(sub_interpreter->python_interpreter);                    \
 	PyObject *ret = NULL;                                                       \
-	PyObject *exception = NULL;
+	PyObject *exception = PyErr_GetRaisedException();                           \
+	if (exception)                                                              \
+		return exception;
 
 #define SETUP_RET                                                \
 	if (PyUnicode_GetLength(target_name) > 0) {              \
