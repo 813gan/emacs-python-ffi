@@ -51,22 +51,63 @@
 (defun emacspy-setup-subinterpreter (subinterpreter &rest pythonpaths)
   "Create Python subinterpreter called `SUBINTERPRETER' and add strings `PYTHONPATHS' to `sys.path'."
   (py-make-interpreter subinterpreter)
-  (py-import subinterpreter "sys")
+  (emacspy-import subinterpreter "sys")
   (py-get-object-attr subinterpreter "sys" "path" "__emacspy_syspath")
   (when (python-environment-exists-p subinterpreter)
     (dolist (path (python-environment-packages-paths subinterpreter))
-      (py-call-method subinterpreter "__emacspy_syspath" "append" nil path)))
+      (emacspy-call-method subinterpreter "__emacspy_syspath" "append" nil path)))
   (dolist (path pythonpaths)
-    (py-call-method subinterpreter "__emacspy_syspath" "append" nil path)) )
+    (emacspy-call-method subinterpreter "__emacspy_syspath" "append" nil path)) )
 
-(defun emacspy--import (subinterpreter &rest imports)
-  "Import modules from `IMPORTS' in `SUBINTERPRETER'."
-  (dolist (import imports)
-    (cond
-     ((consp import)
-      (py-import subinterpreter (car import) (cdr import) ))
-     ((stringp import)
-      (py-import subinterpreter import)) )))
+(defun emacspy--import-py-multipe-objs (subinterpreter module objs)
+  (let ((out (list 'progn))
+        (temp_mod_symobol (format "_emacspy_import_%s" module)))
+    (push `(emacspy-import ,subinterpreter ,module ,temp_mod_symobol) out)
+    (dolist (obj objs)
+      (push (list 'emacspy-get-object-attr subinterpreter temp_mod_symobol obj obj) out) )
+    (nreverse out)))
+
+(defun emacspy--import-py-get-import (subinterpreter import-def)
+  "Make import sexp from `IMPORT-DEF'.  This is utility function for emacspy-import-py."
+  (let ((module) (objs) (as)
+        (reading-module) (reading-obj)
+        (head) (tail import-def))
+    (while tail
+      (setq head (car tail)
+            tail (cdr tail))
+      (cond
+       ((eq head 'from)
+        (setq reading-module 't) )
+       ((eq head 'import)
+        (setq reading-obj 't
+              reading-module nil))
+       ;;;;;;;;;
+       (reading-module
+        (setq module head
+              reading-module nil))
+       (reading-obj
+        (push head objs)) ))
+    (emacspy--import-py-multipe-objs subinterpreter module objs) ))
+
+(defmacro emacspy-import-py (subinterpreter &rest import-defs)
+  "Execute imports inside `SUBINTERPRETER' according to `IMPORT-DEFS'."
+  (cons 'progn (mapcar (apply-partially 'emacspy--import-py-get-import subinterpreter)
+                       import-defs)))
+
+(defun emacspy-get-object-attr (subinterpreter obj_name attr_name &optional target_name)
+  (py-get-object-attr subinterpreter obj_name attr_name target_name))
+
+(defun emacspy-import (subinterpreter module &optional as)
+  "Import modules `MODULE' in `SUBINTERPRETER' and optionally bind it as `AS'."
+  (if as
+      (py-import subinterpreter module as)
+    (py-import subinterpreter module)))
+
+(defun emacspy-call-function (subinterpreter function_name as &rest args)
+  (apply 'py-call-function subinterpreter function_name as args))
+
+(defun emacspy-call-method (subinterpreter obj_name method_name as &rest args)
+    (apply 'py-call-method subinterpreter obj_name method_name as args))
 
 (provide 'emacspy)
 
