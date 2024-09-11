@@ -17,6 +17,9 @@
 (eval-when-compile (require 'subr-x))
 (require 'python-environment)
 
+(defvar emacspy-python-name "python3"
+  "Name of python executable.")
+
 (defun emacspy--hash-table-to-lists (hash)
   "Utility function that convert `HASH' into (list keys values)."
   (let ((keys (hash-table-keys hash))
@@ -42,11 +45,23 @@
       (python-environment-run-block (append '("pip" "install" "--") packages-shell-arg)
 				    subinterpreter virtualenv)))
 
+(defun emacspy-get-base-prefix (subinterpreter)
+  "Get base prefix for `SUBINTERPRETER'.
+https://docs.python.org/3/library/sys.html#sys.base_prefix"
+  (emacspy-import subinterpreter "sys" "__emacspy_sys")
+  (emacspy-get-object-attr subinterpreter "__emacspy_sys" "base_prefix"))
+
+(defun emacspy-get-base-prefix-bin (subinterpreter)
+  (python-environment-bin "" (emacspy-get-base-prefix subinterpreter)))
+
 (defun emacspy-python-environment-make (subinterpreter &optional packages virtualenv)
   "Create venv for `SUBINTERPRETER' and install modules from string list `PACKAGES'."
-  (python-environment-make-block subinterpreter virtualenv)
-  (when packages
-    (emacspy-python-pip-install subinterpreter packages virtualenv) ))
+  (py-make-interpreter subinterpreter)
+  (let ((python-environment-virtualenv
+         (list (expand-file-name emacspy-python-name (emacspy-get-base-prefix-bin subinterpreter)) "-m" "venv")))
+    (python-environment-make-block subinterpreter virtualenv)
+    (when packages
+      (emacspy-python-pip-install subinterpreter packages virtualenv) )))
 
 (defun emacspy-setup-subinterpreter (subinterpreter &rest pythonpaths)
   "Create Python subinterpreter called `SUBINTERPRETER' and add strings `PYTHONPATHS' to `sys.path'."
