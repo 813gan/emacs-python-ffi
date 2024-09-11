@@ -1,8 +1,9 @@
-PYTHON := "python3"
-ifeq ("$(EMACS)","")
-EMACS := emacs
-endif
+PYTHON ?= "python3"
+export EMACS ?= $(shell command -v emacs 2>/dev/null)
+CASK ?= $(shell which cask || echo ${HOME}/.local/bin/cask)
 CLANGFORMAT := clang-format
+
+.PHONY: all clean clean_bin clean_cask test_module_assertions test test_ert test_formatting test_valgrind
 
 HARDENING_FLAGS := -fstack-protector -fstack-clash-protection -fcf-protection \
 	-D_FORTIFY_SOURCE=2 -ftrapv -Wformat=2 -Wjump-misses-init
@@ -21,12 +22,16 @@ ifeq (, $(shell which pkg-config))
 $(error "No pkg-config found.")
 endif
 
+all: emacspy-module.so
+
+CASK_DIR := $(shell ${CASK} package-directory)
+$(CASK_DIR): Cask
+	${CASK} install
+	@touch $(CASK_DIR)
+cask: $(CASK_DIR)
+
 IS_PYTHON_OLD := $(shell ${PYTHON} -c 'import platform;from packaging import version as v; \
 print("-DPYTHON311OLDER") if (v.parse(platform.python_version()) < v.parse("3.12.0")) else exit(0)')
-
-.PHONY: all clean test_module_assertions test test_ert test_formatting test_valgrind
-
-all: emacspy-module.so
 
 emacspy.c: emacspy.pyx
 	cython emacspy.pyx
@@ -46,13 +51,16 @@ emacspy-module.so: emacspy.c stub.c subinterpreter.c
 		-shared $(shell pkg-config --cflags --libs $(PKGCONFIG_PATH)"/python3-embed.pc") \
 		-o emacspy-module.so
 
-clean:
+clean_bin:
 	rm -vf emacspy.c emacspy-module.so
+clean_cask:
+	rm -vfr .cask
+clean: clean_cask clean_bin
 
 test: test_ert test_formatting
 
-test_ert: all
-	ulimit -c unlimited; ${EMACS} -batch -l tests/prepare-tests.el -l ert -l tests/test.el \
+test_ert: cask all
+	ulimit -c unlimited; ${CASK} emacs -batch -l tests/prepare-tests.el -l ert -l tests/test.el \
 		-f ert-run-tests-batch-and-exit
 
 # https://stackoverflow.com/questions/20112989/how-to-use-valgrind-with-python
@@ -60,7 +68,7 @@ test_valgrind: OPTIMALISATION_FLAGS=
 test_valgrind: clean all .valgrind-python.supp
 	PYTHONMALLOC=malloc valgrind --tool=memcheck --suppressions=.valgrind-python.supp \
 		--leak-check=full --show-leak-kinds=all \
-		${EMACS} -batch -l tests/prepare-tests.el -l ert -l tests/test.el \
+		${CASK} emacs -batch -l tests/prepare-tests.el -l ert -l tests/test.el \
 			-f ert-run-tests-batch-and-exit
 
 .valgrind-python.supp:
@@ -73,5 +81,5 @@ test_formatting:
 	${CLANGFORMAT} --dry-run --Werror stub.c subinterpreter.c
 
 test_module_assertions: emacspy-module.so
-	${EMACS} --batch --module-assertions --eval \
+	${CASK} emacs --batch --module-assertions --eval \
 		'(progn (add-to-list '\''load-path ".") (load "emacspy"))'

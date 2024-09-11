@@ -25,6 +25,21 @@ jobs:
     - uses: purcell/setup-emacs@master
       with:
         version: ${{ matrix.emacs_version }}
+    - uses: actions/cache@v2
+      id: cache-cask-packages
+      with:
+        path: .cask
+        key: cache-cask-packages-000
+    - uses: actions/cache@v2
+      id: cache-cask-executable
+      with:
+        path: ~/.cask
+        key: cache-cask-executable-000
+    - uses: cask/setup-cask@master
+      if: steps.cache-cask-executable.outputs.cache-hit != 'true'
+      with:
+        version: snapshot
+    - run: echo "$HOME/.cask/bin" >> $GITHUB_PATH
     - uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python_version }}
