@@ -19,13 +19,13 @@ int emacs_module_init(struct emacs_runtime *runtime) {
 		    "ERROR: emacs_module_init: emacspy is already loaded.");
 		return 2;
 	}
-	dlopen("#LIBPYTHON_NAME", RTLD_LAZY | RTLD_GLOBAL);
+	dlopen(LIBPYTHON_NAME, RTLD_LAZY | RTLD_GLOBAL);
 
 	PyConfig config;
 	PyStatus status;
 
 	PyConfig_InitPythonConfig(&config);
-	status = PyConfig_SetString(&config, &config.home, L"#BASE_PREFIX");
+	status = PyConfig_SetString(&config, &config.home, BASE_PREFIX);
 	if (PyStatus_Exception(status)) {
 		return 3;
 	}
