@@ -210,7 +210,7 @@ finish:
 }
 
 PyObject *call_function(char *interpreter_name, PyObject *callable_name, PyObject *target_name,
-    PyObject *args_pylist) {
+    PyObject *args_pylist, PyObject *kvargs_pydict) {
 	SUBINTERPRETER_SWITCH;
 	PyObject *global_dict = PyModule_GetDict(sub_interpreter->main_module);
 	PyObject *callable = PyObject_GetItem(global_dict, callable_name); // New reference
@@ -230,7 +230,7 @@ PyObject *call_function(char *interpreter_name, PyObject *callable_name, PyObjec
 
 	assert(callable);
 
-	obj = PyObject_Call(callable, args_pylist, NULL); // New reference
+	obj = PyObject_Call(callable, args_pylist, kvargs_pydict); // New reference
 	exception = PyErr_GetRaisedException();
 	if (exception)
 		goto finish;

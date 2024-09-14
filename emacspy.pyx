@@ -378,7 +378,7 @@ cdef extern from "subinterpreter.c":
     object list_subinterpreters()
     object run_string(char*, char*, object)
     object call_method(char*, object, object, object, object, object)
-    object call_function(char*, object, object, object)
+    object call_function(char*, object, object, object, object)
     object import_module(char*, object, object)
     object get_global_variable(char*, object)
     object get_object_attr(char*, object, object, object)
@@ -449,15 +449,13 @@ def init():
             raise ret
         return ret
 
-    @defun('py-call-function')
-    def call_function_python(interpreter_name, function_name, target_name='', *args):
-        if target_name and target_name.to_python_type():
-            target_name = target_name.to_python_type()
-        else:
-            target_name = ''
-        args_py = tuple((arg.to_python_type() for arg in args))
+    @defun('emacspy--call-function')
+    def call_function_python(interpreter_name, function_name, target_name, args, kwargs):
+        target_name: str = target_name.to_python_type() or ''
+        args_py: tuple = tuple(args.to_python_type() or ())
+        kwargs_py: dict = kwargs.to_python_type()
         ret = call_function(str_elisp2c(interpreter_name), function_name.to_python_type(), \
-                            target_name, args_py)
+                            target_name, args_py, kwargs_py)
         if isinstance(ret, BaseException):
             raise ret
         return ret

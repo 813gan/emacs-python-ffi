@@ -35,12 +35,19 @@
   (should (string= "__main__" (py-get-global-variable  "test" "__name__")))
   (should-error (py-get-global-variable  "test" "NON_EXISTING_VARIABLE")) )
 
-(ert-deftest ert-test-emacspy-py-call-function ()
-  (should (eq 3 (py-call-function "test" "len" nil "123")))
-  (should (py-call-function "test" "len" "call_function_test_var" "123"))
+(ert-deftest ert-test-emacspy-emacspy--call-function ()
+  (should (eq 3 (emacspy--call-function "test" "len" nil '("123") (emacspy-alist2hash nil))))
+  (should (emacspy--call-function "test" "len" "call_function_test_var" '("123") (emacspy-alist2hash nil)))
   (should (eq 3 (py-get-global-variable  "test" "call_function_test_var")))
-  (should-error (py-call-function "test" "NON-EXISTING-FUNCTION" nil "123")
-                :type 'python-exception) )
+  (should-error (emacspy--call-function "test" "NON-EXISTING-FUNCTION" nil '("123") (emacspy-alist2hash nil))
+                :type 'python-exception)
+
+  (should (emacspy--call-function "test" "dict" "call_function_kvargs_test_var" nil
+                                  (emacspy-alist2hash '(("some_test" . 1) ("test" . "also_test"))) ))
+  (let ((ret (py-get-global-variable "test" "call_function_kvargs_test_var")))
+    (should (hash-table-p ret))
+    (should (eq 1 (gethash "some_test" ret )))
+    (should (string= "also_test" (gethash "test" ret))) ) )
 
 (ert-deftest ert-test-emacspy-py-get-object-attr ()
   (should (string= "0123456789" (py-get-object-attr "test" "string" "digits")))
