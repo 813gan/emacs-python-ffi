@@ -246,6 +246,8 @@ cdef emacs_value unwrap(obj) except *:
         obj = make_list(obj)
     elif isinstance(obj, tuple):
         obj = make_list(list(obj))
+    elif isinstance(obj, dict):
+        obj = make_dict(obj)
 
     if isinstance(obj, EmacsValue):
         return (<EmacsValue>obj).v
@@ -281,6 +283,16 @@ cpdef make_bool(bool b):
 
 cpdef make_list(list l):
     return funcall(sym("list"), l)
+
+cpdef make_dict(dict d):
+    if not d:
+        return funcall(sym("make-hash-table"), [])
+    keys = []
+    values = []
+    for k, v in d.items():
+        keys.append(k)
+        values.append(v)
+    return funcall(sym("emacspy--lists-to-hash-table"), [keys, values])
 
 cdef emacs_value string_ptr(str s):
     cdef emacs_env* env = get_env()

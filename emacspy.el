@@ -14,6 +14,7 @@
 
 ;;; Code:
 
+(require 'cl-lib)
 (eval-when-compile (require 'subr-x))
 (require 'python-environment)
 
@@ -27,6 +28,13 @@
     (setq values
 	  (mapcar (lambda (key) (gethash key hash)) keys))
     (list keys values) ))
+
+(defun emacspy--lists-to-hash-table (keys values)
+  "Utility function that convert lists of `KEYS' and `VALUES' to hash."
+  (let ((hash (make-hash-table :test 'equal)))
+    (cl-mapcar (lambda (k v) (puthash k v hash))
+     keys values)
+    hash))
 
 (require 'emacspy-module)
 
