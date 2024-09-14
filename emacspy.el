@@ -47,6 +47,13 @@
 
 ;; emacspy public API
 
+(defun emacspy-alist2hash (alist)
+  "Convert `ALIST' to hash for easy creation of Python dicts."
+  (let ((hash (make-hash-table) ))
+    (dolist (kv alist)
+      (puthash (car kv) (cdr kv) hash))
+    hash))
+
 (defun emacspy-python-pip-install (subinterpreter packages &optional virtualenv)
   "Install packages for `SUBINTERPRETER' from string list `PACKAGES'."
     (let* ((packages-shell-arg (mapcar 'shell-quote-argument packages)))
