@@ -165,7 +165,7 @@
     (puthash 2 nil hash)
     (puthash "list" '(1) hash)
 
-    (puthash "key" 1 nhash)
+    (puthash "key" -1.5 nhash)
     (puthash "hash" nhash hash)
 
     (should (py-set-global "test" empty-hash "test_empty_hash"))
@@ -174,4 +174,12 @@
     (should (py-run-string "test" "test_hash[1]=='test'"))
     (should (py-run-string "test" "test_hash[2]==False"))
     (should (py-run-string "test" "test_hash['list'][0]==1"))
-    (should (py-run-string "test" "test_hash['hash']['key']==1")) ))
+    (should (py-run-string "test" "test_hash['hash']['key']==-1.5"))
+
+    (let ((py-hash (py-get-global-variable "test" "test_hash")))
+      (should (hash-table-p py-hash))
+      (should (string= "test" (gethash 1 py-hash)))
+      (should (eq nil (gethash 2 py-hash)))
+      (should (listp (gethash "list" py-hash)))
+      (should (eq 1 (nth 0 (gethash "list" py-hash)) ))
+      (should (= -1.5 (gethash "key" (gethash "hash" py-hash)))) ) ))
