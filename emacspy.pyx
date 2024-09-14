@@ -204,7 +204,9 @@ cdef class EmacsValue:
 
         keys, values = \
             EmacsValue.wrap(env.funcall(env, hash_table_to_lists, 1, &hash_src)).to_python_type()
-        return dict(zip(keys, values))
+        if keys and values:
+            return dict(zip(keys, values))
+        return dict()
 
     def to_python_type(self):
         my_type = self.type()
