@@ -159,13 +159,16 @@
 (ert-deftest ert-test-emacspy-data-hash ()
   (should (functionp 'emacspy--hash-table-to-lists))
   (let ((hash (make-hash-table))
-        (nhash (make-hash-table)))
+        (nhash (make-hash-table))
+        (empty-hash (make-hash-table)))
     (puthash 1 "test" hash)
     (puthash 2 nil hash)
     (puthash "list" '(1) hash)
 
     (puthash "key" 1 nhash)
     (puthash "hash" nhash hash)
+
+    (should (py-set-global "test" empty-hash "test_empty_hash"))
 
     (should (py-set-global "test" hash "test_hash"))
     (should (py-run-string "test" "test_hash[1]=='test'"))
