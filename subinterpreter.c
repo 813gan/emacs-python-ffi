@@ -173,71 +173,56 @@ finish:
 	SUBINTERPRETER_RETURN;
 }
 
-PyObject *call_method(char *interpreter_name, PyObject *obj_name, PyObject *method_name,
-    PyObject *kwnames, PyObject *target_name, PyObject *args_pylist) {
+PyObject *call_py(char *interpreter_name, PyObject *obj_name, PyObject *method_name,
+    PyObject *target_name, PyObject *args_pytuple, PyObject *kwargs_pydict) {
 	SUBINTERPRETER_SWITCH;
 	PyObject *global_dict = PyModule_GetDict(sub_interpreter->main_module);
-	Py_ssize_t nargs = PyList_Size(args_pylist);
-	size_t nargsf = 1 + PyList_Size(args_pylist); // TODO sign to unsign conversion??
-	size_t size_obj_args = nargsf * sizeof(PyObject);
-	PyObject **obj_with_args = malloc(size_obj_args);
-	assert(obj_with_args);
-	obj_with_args[0] = PyObject_GetItem(global_dict, obj_name); // New reference
-
+	PyObject *call_obj = PyObject_GetItem(global_dict, obj_name); // New reference
 	PyObject *obj = NULL;
+	PyObject *method = NULL;
 
-	if (NULL == obj_with_args[0]) {
-		PyErr_SetObject(PyExc_KeyError, obj_name);
-		exception = PyErr_GetRaisedException();
-		goto finish;
-	}
-
-	for (unsigned int i = 0; i < nargs; ++i) {
-		obj_with_args[1 + i] = PyList_GetItem(args_pylist, i);
-		assert(obj_with_args[1 + i]);
-	}
-
-	obj = PyObject_VectorcallMethod(method_name, obj_with_args, nargsf, kwnames);
-	exception = PyErr_GetRaisedException();
-	if (exception)
-		goto finish;
-
-	SETUP_RET;
-finish:
-	Py_XDECREF(obj_with_args[0]);
-	free(obj_with_args);
-	SUBINTERPRETER_RETURN;
-}
-
-PyObject *call_function(char *interpreter_name, PyObject *callable_name, PyObject *target_name,
-    PyObject *args_pylist, PyObject *kvargs_pydict) {
-	SUBINTERPRETER_SWITCH;
-	PyObject *global_dict = PyModule_GetDict(sub_interpreter->main_module);
-	PyObject *callable = PyObject_GetItem(global_dict, callable_name); // New reference
-	PyObject *obj = NULL;
-
-	if (NULL == callable) {
+	if (NULL == call_obj) {
 		PyErr_Clear();
 		PyObject *builtins_name = PyUnicode_FromString("__builtins__");
 		PyObject *builtins = PyObject_GetItem(global_dict, builtins_name);
 		Py_DECREF(builtins_name);
-		callable = PyObject_GetAttr(builtins, callable_name); // New reference
+		call_obj = PyObject_GetAttr(builtins, obj_name); // New reference
 	}
 
 	exception = PyErr_GetRaisedException();
 	if (exception)
 		goto finish;
 
-	assert(callable);
+	assert(call_obj);
 
-	obj = PyObject_Call(callable, args_pylist, kvargs_pydict); // New reference
+	if (1 != PyObject_IsTrue(kwargs_pydict)) {
+		kwargs_pydict = NULL;
+	}
+
+	if (1 == PyObject_IsTrue(method_name)) {
+		method = PyObject_GetAttr(call_obj, method_name); // New reference
+
+		exception = PyErr_GetRaisedException();
+		if (exception)
+			goto finish;
+
+		if (0 == PyCallable_Check(method)) {
+			PyErr_SetObject(PyExc_ValueError, method_name);
+			exception = PyErr_GetRaisedException();
+			goto finish;
+		}
+		obj = PyObject_Call(method, args_pytuple, kwargs_pydict); // New reference
+	} else {
+		obj = PyObject_Call(call_obj, args_pytuple, kwargs_pydict); // New reference
+	}
 	exception = PyErr_GetRaisedException();
 	if (exception)
 		goto finish;
 
 	SETUP_RET;
 finish:
-	Py_XDECREF(callable);
+	Py_XDECREF(call_obj);
+	Py_XDECREF(method);
 	SUBINTERPRETER_RETURN;
 }
 

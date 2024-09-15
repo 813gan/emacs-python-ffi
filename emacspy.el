@@ -133,11 +133,8 @@ https://docs.python.org/3/library/sys.html#sys.base_prefix"
       (py-import subinterpreter module as)
     (py-import subinterpreter module)))
 
-(defun emacspy-call-function (subinterpreter function_name as &rest args)
-  (apply 'py-call-function subinterpreter function_name as args))
-
-(defun emacspy-call-method (subinterpreter obj_name method_name as &rest args)
-    (apply 'py-call-method subinterpreter obj_name method_name as args))
+(defun emacspy-call (subinterpreter obj_name method_name &optional as &rest args)
+    (apply 'emacspy--call subinterpreter obj_name method_name as args nil))
 
 (provide 'emacspy)
 
