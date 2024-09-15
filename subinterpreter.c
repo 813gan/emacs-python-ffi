@@ -7,13 +7,12 @@
 #define MAX_INTERPRETER_NAME_LEN 100
 
 #ifdef PYTHON311OLDER
-#define PyErr_GetRaisedException()                                   \
-	({                                                           \
-		PyObject *type, *value, *traceback;                  \
-		PyErr_Fetch(&type, &value, &traceback);              \
-		PyErr_NormalizeException(&type, &value, &traceback); \
-		value;                                               \
-	})
+PyObject *PyErr_GetRaisedException() {
+	PyObject *type, *value, *traceback;
+	PyErr_Fetch(&type, &value, &traceback);
+	PyErr_NormalizeException(&type, &value, &traceback);
+	return value;
+}
 #endif
 
 #define SUBINTERPRETER_SWITCH                                                       \
