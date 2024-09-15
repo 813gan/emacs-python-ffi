@@ -23,12 +23,14 @@
                    "test" (py-set-global "test" () "test_bool")))) )
 
 (ert-deftest ert-test-emacspy-py-call-method ()
-  (should (string= "/" (py-call-method "test" "ospath" "realpath" nil "/")))
-  (should (py-call-method "test" "ospath" "realpath" "call_method_test_var" "/"))
-  (should (string= "/" (py-get-global-variable "test" "call_method_test_var")))
-  (should-error (string= "/" (py-call-method "test" "ospath" "DUMMY_METHOD"))
+  (should (string= "/" (emacspy--call "test" "ospath" "realpath" nil '("/") nil)))
+  (should (emacspy--call "test" "ospath" "realpath" "call_method_test_var" '("/") nil))
+  (should (string= "/" (py-get-global-variable "test" "call_method_test_var" )))
+  (should-error (emacspy--call "test" "ospath" "DUMMY_METHOD" nil (emacspy-alist2hash nil))
                 :type 'python-exception)
-  (should-error (string= "/" (py-call-method "test" "NON_EXISTING_OBJECT" "DUMMY_METHOD"))
+  (should-error (emacspy--call "test" "NON_EXISTING_OBJECT" "DUMMY_METHOD" nil (emacspy-alist2hash nil))
+                :type 'python-exception)
+  (should-error (emacspy--call "test" "string" "digits" nil nil nil)
                 :type 'python-exception) )
 
 (ert-deftest ert-test-emacspy-py-get-global-variable ()
@@ -36,13 +38,13 @@
   (should-error (py-get-global-variable  "test" "NON_EXISTING_VARIABLE")) )
 
 (ert-deftest ert-test-emacspy-emacspy--call-function ()
-  (should (eq 3 (emacspy--call-function "test" "len" nil '("123") (emacspy-alist2hash nil))))
-  (should (emacspy--call-function "test" "len" "call_function_test_var" '("123") (emacspy-alist2hash nil)))
+  (should (eq 3 (emacspy--call "test" "len" nil nil '("123") nil)))
+  (should (emacspy--call "test" "len" nil "call_function_test_var" '("123") nil))
   (should (eq 3 (py-get-global-variable  "test" "call_function_test_var")))
-  (should-error (emacspy--call-function "test" "NON-EXISTING-FUNCTION" nil '("123") (emacspy-alist2hash nil))
+  (should-error (emacspy--call "test" "NON-EXISTING-FUNCTION" nil nil '("123") (emacspy-alist2hash nil))
                 :type 'python-exception)
 
-  (should (emacspy--call-function "test" "dict" "call_function_kvargs_test_var" nil
+  (should (emacspy--call "test" "dict" nil "call_function_kvargs_test_var" nil
                                   (emacspy-alist2hash '(("some_test" . 1) ("test" . "also_test"))) ))
   (let ((ret (py-get-global-variable "test" "call_function_kvargs_test_var")))
     (should (hash-table-p ret))
@@ -67,10 +69,10 @@
 (ert-deftest ert-test-emacspy-import-custom-module ()
   (should (py-import "test" "sys"))
   (should (py-get-object-attr "test" "sys" "path" "syspath"))
-  (should-not (py-call-method "test" "syspath" "append" nil "./tests/"))
+  (should-not (emacspy--call "test" "syspath" "append" nil '("./tests/") nil))
   (should (py-import "test" "emacspy_test"))
   (should (py-get-object-attr "test" "emacspy_test" "test_obj" "test_obj"))
-  (should (string= "test" (py-call-method "test" "test_obj" "get_string"))) )
+  (should (string= "test" (emacspy--call "test" "test_obj" "get_string" nil nil nil))) )
 
 (ert-deftest ert-test-emacspy-non-existing-interpreter ()
   (should-error (py-run-string "NON_EXISTING" "True")))
