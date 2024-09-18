@@ -3,7 +3,8 @@ export EMACS ?= $(shell command -v emacs 2>/dev/null)
 CASK ?= $(shell which cask || echo ${HOME}/.local/bin/cask)
 CLANGFORMAT := clang-format
 
-.PHONY: all clean clean_bin clean_cask test_module_assertions test test_ert test_formatting test_valgrind
+.PHONY: all clean clean_all clean_cask test_module_assertions \
+	test test_module test_elisp test_formatting test_valgrind
 
 HARDENING_FLAGS := -fstack-protector -fstack-clash-protection -fcf-protection \
 	-D_FORTIFY_SOURCE=2 -ftrapv -Wformat=2 -Wjump-misses-init
@@ -60,10 +61,14 @@ clean_cask:
 	rm -vfr .cask
 clean: clean_cask clean_bin
 
-test: test_ert test_formatting
+test: test_module test_elisp test_formatting
 
-test_ert: cask all
+test_module: cask all
 	ulimit -c unlimited; ${CASK} emacs -batch -l tests/prepare-tests.el -l ert -l tests/test.el \
+		-f ert-run-tests-batch-and-exit
+
+test_elisp: cask all
+	ulimit -c unlimited; ${CASK} emacs -batch -l tests/prepare-tests.el -l ert -l tests/elisp-test.el \
 		-f ert-run-tests-batch-and-exit
 
 # https://stackoverflow.com/questions/20112989/how-to-use-valgrind-with-python

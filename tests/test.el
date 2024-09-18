@@ -1,5 +1,3 @@
-(require 'cl)
-
 (ert-deftest ert-test-emacspy-py-import ()
   (should-error (py-import "test" "NON_EXISTING_MOD")
                 :type 'python-exception) )
