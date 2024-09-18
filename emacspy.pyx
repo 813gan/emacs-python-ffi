@@ -226,7 +226,7 @@ cdef class EmacsValue:
             return self.as_list()
         elif my_type == "hash-table":
             return self.as_dict()
-        raise ValueError("Unable to export emacs value")
+        raise ValueError(f"Unable to export emacs value of type '{my_type} ({str(self)})'")
 
     def __str__(self):
         return _F().prin1_to_string(self).str()
@@ -354,7 +354,7 @@ cdef emacs_value call_python_object(emacs_env *env, ptrdiff_t nargs, emacs_value
         c_result = unwrap(result)
     except BaseException as exc:
         c_result = string_ptr("error")
-        msg = type(exc).__name__ + ': ' + str(exc)
+        msg = type(exc).__name__ + ': ' + str(exc) + "\n" + traceback.format_exc()
         env.non_local_exit_signal(env, sym_ptr('python-exception'), string_ptr(msg))
 
     current_env = prev_env
