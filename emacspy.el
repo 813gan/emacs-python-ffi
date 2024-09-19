@@ -187,8 +187,12 @@ https://docs.python.org/3/library/sys.html#sys.base_prefix"
       ,subinterpreter ,obj_name ,method_name ,as ,(cons 'list args) (emacspy-kwargs-plist2hash ,kwargs))))
 
 (defun emacspy-exec-string (subinterpreter string)
-  "Exec (PyRun_SimpleString) `STRING' in `SUBINTERPRETER'.  There is no return value."
+  "Exec (PyRun_SimpleString) `STRING' in `SUBINTERPRETER'.  There is no return value or details about exception."
   (emacspy--exec-string subinterpreter string))
+
+(cl-defun emacspy-eval-string (subinterpreter string &key as)
+  "Eval (PyRun_String) `STRING' in `SUBINTERPRETER' optionally binding result to variable named after keyword argument `AS'."
+  (emacspy--eval-string subinterpreter string as))
 
 (provide 'emacspy)
 

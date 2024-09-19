@@ -2,14 +2,15 @@
   (should-error (py-import "test" "NON_EXISTING_MOD")
                 :type 'python-exception) )
 
-(ert-deftest ert-test-emacspy-py-run-string ()
-  (should (py-run-string "test" "ospath.realpath('/')"))
-  (should-error (py-run-string "test" "some bullshit")
+(ert-deftest ert-test-emacspy-emacspy--eval-string ()
+  (should (emacspy--eval-string "test" "ospath.realpath('/')"))
+  (should-error (emacspy--eval-string "test" "some bullshit")
                 :type 'python-exception)
-  (should (py-run-string "test" "ospath.realpath('/')" "run_string_test_var"))
-  (should (string= "/" (py-get-global-variable "test" "run_string_test_var")))
-  (should (py-run-string "test" "1==1"))
-  (should-not (py-run-string "test" "1==2")) )
+  (should (emacspy--eval-string "test" "ospath.realpath('/')" "eval_string_test_var"))
+  (should (string= "/" (py-get-global-variable "test" "eval_string_test_var")))
+  (should (emacspy--eval-string "test" "1==1"))
+  (should-not (emacspy--eval-string "test" "1==2")) )
+
 (ert-deftest ert-test-emacspy-emacspy--exec-string ()
   (should (emacspy--exec-string "test" "True; False;"))
   (should-error (emacspy--exec-string "test" "some bullshit")
@@ -20,8 +21,8 @@
   (should (= 2 (py-get-global-variable "test" "variable_by_exec"))) )
 
 (ert-deftest ert-test-emacspy-data-bool ()
-  (should (eq 't (py-run-string "test" "True")))
-  (should (eq nil (py-run-string "test" "False")))
+  (should (eq 't (emacspy--eval-string "test" "True")))
+  (should (eq nil (emacspy--eval-string "test" "False")))
 
   (should (eq 't (py-get-global-variable
                   "test" (py-set-global "test" 't "test_bool"))))
@@ -81,7 +82,7 @@
   (should (string= "test" (emacspy--call "test" "test_obj" "get_string" nil nil nil))) )
 
 (ert-deftest ert-test-emacspy-non-existing-interpreter ()
-  (should-error (py-run-string "NON_EXISTING" "True")))
+  (should-error (emacspy--eval-string "NON_EXISTING" "True")))
 
 (ert-deftest ert-test-emacspy-duplicate-load ()
   (should-error (progn (load "emacspy_module")
@@ -124,23 +125,23 @@
                   "test" (py-set-global "test" 0.0 "test_int")))) )
 
 (ert-deftest ert-test-emacspy-data-str ()
-  (should (string= "" (py-run-string "test" "''")))
-  (should (string= "str" (py-run-string "test" "'str'")))
-  (should (string= "субтитри" (py-run-string "test" "'субтитри'"))) )
+  (should (string= "" (emacspy--eval-string "test" "''")))
+  (should (string= "str" (emacspy--eval-string "test" "'str'")))
+  (should (string= "субтитри" (emacspy--eval-string "test" "'субтитри'"))) )
 
 (ert-deftest ert-test-emacspy-data-list ()
-  (let ((lst (py-run-string "test" "[1, True, 2, 'test']")))
+  (let ((lst (emacspy--eval-string "test" "[1, True, 2, 'test']")))
     (should (eq 4 (length lst)))
     (should (eq 1 (nth 0 lst)))
     (should (eq 't (nth 1 lst)))
     (should (eq 2 (nth 2 lst)))
     (should (string= "test" (nth 3 lst))) )
 
-  (let ((lst (py-run-string "test" "(False,)")))
+  (let ((lst (emacspy--eval-string "test" "(False,)")))
     (should (eq 1 (length lst)))
     (should (eq nil (nth 0 lst))) )
 
-  (let ((lst (py-run-string "test" "([1, 2, 3], 'test', False)")))
+  (let ((lst (emacspy--eval-string "test" "([1, 2, 3], 'test', False)")))
     (should (eq 3 (length lst)))
     (let ((nested-lst (nth 0 lst)))
       (should (listp nested-lst))
@@ -186,10 +187,10 @@
     (should (py-set-global "test" empty-hash "test_empty_hash"))
 
     (should (py-set-global "test" hash "test_hash"))
-    (should (py-run-string "test" "test_hash[1]=='test'"))
-    (should (py-run-string "test" "test_hash[2]==False"))
-    (should (py-run-string "test" "test_hash['list'][0]==1"))
-    (should (py-run-string "test" "test_hash['hash']['key']==-1.5"))
+    (should (emacspy--eval-string "test" "test_hash[1]=='test'"))
+    (should (emacspy--eval-string "test" "test_hash[2]==False"))
+    (should (emacspy--eval-string "test" "test_hash['list'][0]==1"))
+    (should (emacspy--eval-string "test" "test_hash['hash']['key']==-1.5"))
 
     (let ((py-hash (py-get-global-variable "test" "test_hash")))
       (should (hash-table-p py-hash))

@@ -157,7 +157,7 @@ finish:
 	SUBINTERPRETER_RETURN;
 }
 
-PyObject *run_string(char *interpreter_name, char *string, PyObject *target_name) {
+PyObject *eval_string(char *interpreter_name, char *string, PyObject *target_name) {
 	SUBINTERPRETER_SWITCH;
 	PyObject *global_dict = PyModule_GetDict(sub_interpreter->main_module);
 	PyObject *local_dict = PyDict_New();
