@@ -186,6 +186,10 @@ https://docs.python.org/3/library/sys.html#sys.base_prefix"
     `(emacspy--call
       ,subinterpreter ,obj_name ,method_name ,as ,(cons 'list args) (emacspy-kwargs-plist2hash ,kwargs))))
 
+(defun emacspy-exec-string (subinterpreter string)
+  "Exec (PyRun_SimpleString) `STRING' in `SUBINTERPRETER'.  There is no return value."
+  (emacspy--exec-string subinterpreter string))
+
 (provide 'emacspy)
 
 ;;; emacspy.el ends here
