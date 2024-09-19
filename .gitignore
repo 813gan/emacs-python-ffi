@@ -1,7 +1,7 @@
 *~
 /*.so
-/emacspy.c
-/emacspy.h
+/emacspy_module.c
+/emacspy_module.h
 .mypy_cache
 *.pyc
 /.valgrind-python.supp

@@ -67,7 +67,7 @@
 (ert-deftest ert-test-emacspy-import-custom-module ()
   (should (py-import "test" "sys"))
   (should (py-get-object-attr "test" "sys" "path" "syspath"))
-  (should-not (emacspy--call "test" "syspath" "append" nil '("./tests/") nil))
+  (should-not (emacspy--call "test" "syspath" "append" nil (list (concat emacspy-module-dir "tests")) nil))
   (should (py-import "test" "emacspy_test"))
   (should (py-get-object-attr "test" "emacspy_test" "test_obj" "test_obj"))
   (should (string= "test" (emacspy--call "test" "test_obj" "get_string" nil nil nil))) )
@@ -76,8 +76,8 @@
   (should-error (py-run-string "NON_EXISTING" "True")))
 
 (ert-deftest ert-test-emacspy-duplicate-load ()
-  (should-error (progn (load "emacspy-module")
-                       (load "emacspy-module"))))
+  (should-error (progn (load "emacspy_module")
+                       (load "emacspy_module"))))
 
 (ert-deftest ert-test-emacspy-create-destroy-subinterpreter ()
   (let ((sub "test_subinterpreter"))

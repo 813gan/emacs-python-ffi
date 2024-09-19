@@ -20,6 +20,8 @@
 
 (defvar emacspy-python-name "python3"
   "Name of python executable.")
+(defvar emacspy-module-dir (file-name-directory (or load-file-name buffer-file-name))
+  "Directory containing emacspy_module.so.")
 
 (defun emacspy--hash-table-to-lists (hash)
   "Utility function that convert `HASH' into (list keys values)."
@@ -36,7 +38,7 @@
      keys values)
     hash))
 
-(require 'emacspy-module)
+(require 'emacspy_module)
 
 (defun emacspy--import-py-multipe-objs (subinterpreter module objs)
   (let ((out (list 'progn))
@@ -141,6 +143,8 @@ https://docs.python.org/3/library/sys.html#sys.base_prefix"
   (py-make-interpreter subinterpreter)
   (emacspy-import subinterpreter "sys" "__emacspy_sys")
   (py-get-object-attr subinterpreter "__emacspy_sys" "path" "__emacspy_syspath")
+  (emacspy--call subinterpreter "__emacspy_syspath" "append" nil
+                 (list emacspy-module-dir) nil)
   (when (python-environment-exists-p subinterpreter)
     (dolist (path (python-environment-packages-paths subinterpreter))
       (emacspy--call subinterpreter "__emacspy_syspath" "append" nil (list path) nil)))

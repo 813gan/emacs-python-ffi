@@ -4,7 +4,7 @@
 #include "emacs-module.h"
 
 int emacs_module_init_py(void *runtime);
-void PyInit_emacspy(void);
+void PyInit_emacspy_module(void);
 void init_interpreter_list(void);
 
 int emacs_module_init(struct emacs_runtime *runtime) {
@@ -35,7 +35,7 @@ int emacs_module_init(struct emacs_runtime *runtime) {
 	}
 
 	init_interpreter_list();
-	PyInit_emacspy();
+	PyInit_emacspy_module();
 	int result = emacs_module_init_py(runtime);
 	PyEval_SaveThread();
 	return result;
