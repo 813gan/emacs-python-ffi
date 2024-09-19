@@ -377,6 +377,7 @@ cdef extern from "subinterpreter.c":
     object destroy_subinterpreter(char*)
     object list_subinterpreters()
     object run_string(char*, char*, object)
+    object exec_string(char*, char*)
     object call_py(char*, object, object, object, object, object)
     object import_module(char*, object, object)
     object get_global_variable(char*, object)
@@ -411,6 +412,13 @@ def init():
         else:
             target_name = ''
         ret = run_string(str.encode(interpreter_name.str()), str.encode(run.str()), target_name)
+        if isinstance(ret, BaseException):
+            raise ret
+        return ret
+
+    @defun('emacspy--exec-string')
+    def py_exec_string(interpreter_name, run):
+        ret = exec_string(str.encode(interpreter_name.str()), str.encode(run.str()))
         if isinstance(ret, BaseException):
             raise ret
         return ret

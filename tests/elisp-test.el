@@ -14,3 +14,6 @@
   (should (string= "test2"
 	   (emacspy-call "test"
 			 test_format_str2.format :kwargs '(key "st2") "te"))) )
+
+(ert-deftest ert-test-emacspy-eval/exec ()
+  (should (emacspy-exec-string "test" "True")))

@@ -172,6 +172,25 @@ finish:
 	SUBINTERPRETER_RETURN;
 }
 
+PyObject *exec_string(char *interpreter_name, char *string) {
+	SUBINTERPRETER_SWITCH;
+	ret = Py_True;
+
+	int simple_string_ret = PyRun_SimpleString(string);
+	if (-1 == simple_string_ret) {
+		PyErr_Format(PyExc_Exception,
+		    "PyRun_SimpleString inside subinterpreter '%s' raised exception.",
+		    interpreter_name);
+	}
+
+	exception = PyErr_GetRaisedException();
+	if (exception)
+		goto finish;
+	// SETUP_RET assumes target_name
+finish:
+	SUBINTERPRETER_RETURN;
+}
+
 PyObject *call_py(char *interpreter_name, PyObject *obj_name, PyObject *method_name,
     PyObject *target_name, PyObject *args_pytuple, PyObject *kwargs_pydict) {
 	SUBINTERPRETER_SWITCH;
