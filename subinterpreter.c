@@ -90,16 +90,17 @@ PyObject *make_interpreter(char *interpreter_name) {
 		return Py_True;
 	}
 
+	tstate = Py_NewInterpreter();
+	if (NULL == tstate) {
+		PyGILState_Release(gil);
+		return Py_False;
+	}
+	PyThreadState_Swap(tstate);
+
 	unsigned int name_len = strnlen(interpreter_name, MAX_INTERPRETER_NAME_LEN) + 1;
 	char *name = malloc(name_len);
 	assert(name);
 	strncpy(name, interpreter_name, name_len);
-
-	tstate = Py_NewInterpreter();
-	if (NULL == tstate) {
-		return Py_False;
-	}
-	PyThreadState_Swap(tstate);
 
 	PyObject *main_module = PyImport_AddModule("__main__");
 	PyThreadState_Swap(orig_tstate);
