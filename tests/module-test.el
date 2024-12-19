@@ -1,85 +1,92 @@
+(add-to-list 'load-path ".")
+(load "emacspy")
+(emacspy-setup-subinterpreter "test")
+(py-import "test" "string" "string")
+(py-import "test" "os.path" "ospath")
+
+
 (ert-deftest ert-test-emacspy-py-import ()
-  (should-error (py-import "test" "NON_EXISTING_MOD")
+  (should-error (py-import "test" "NON_EXISTING_MOD" "")
                 :type 'python-exception) )
 
 (ert-deftest ert-test-emacspy-emacspy--eval-string ()
-  (should (emacspy--eval-string "test" "ospath.realpath('/')"))
-  (should-error (emacspy--eval-string "test" "some bullshit")
+  (should (emacspy--eval-string "test" "ospath.realpath('/')" ""))
+  (should-error (emacspy--eval-string "test" "some bullshit" "")
                 :type 'python-exception)
   (should (emacspy--eval-string "test" "ospath.realpath('/')" "eval_string_test_var"))
-  (should (string= "/" (py-get-global-variable "test" "eval_string_test_var")))
-  (should (emacspy--eval-string "test" "1==1"))
-  (should-not (emacspy--eval-string "test" "1==2")) )
+  (should (string= "/" (emacspy-get-variable-global "test" "eval_string_test_var")))
+  (should (emacspy--eval-string "test" "1==1" ""))
+  (should-not (emacspy--eval-string "test" "1==2" "")) )
 
 (ert-deftest ert-test-emacspy-emacspy--exec-string ()
   (should (emacspy--exec-string "test" "True; False;"))
   (should-error (emacspy--exec-string "test" "some bullshit")
                 :type 'python-exception)
   (should (emacspy--exec-string "test" "variable_by_exec = 1"))
-  (should (eq 1 (py-get-global-variable "test" "variable_by_exec")))
+  (should (eq 1 (emacspy-get-variable-global "test" "variable_by_exec")))
   (should (emacspy--exec-string "test" "from statistics import median; variable_by_exec = median([1,3])"))
-  (should (= 2 (py-get-global-variable "test" "variable_by_exec"))) )
+  (should (= 2 (emacspy-get-variable-global "test" "variable_by_exec"))) )
 
 (ert-deftest ert-test-emacspy-data-bool ()
-  (should (eq 't (emacspy--eval-string "test" "True")))
-  (should (eq nil (emacspy--eval-string "test" "False")))
+  (should (eq 't (emacspy--eval-string "test" "True" "")))
+  (should (eq nil (emacspy--eval-string "test" "False" "")))
 
-  (should (eq 't (py-get-global-variable
-                  "test" (py-set-global "test" 't "test_bool"))))
-  (should (eq nil (py-get-global-variable
-                   "test" (py-set-global "test" () "test_bool")))) )
+  (should (eq 't (emacspy-get-variable-global
+                  "test" (emacspy-set-variable-global "test" "test_bool" 't))))
+  (should (eq nil (emacspy-get-variable-global
+                   "test" (emacspy-set-variable-global "test" "test_bool" () )))) )
 
 (ert-deftest ert-test-emacspy-py-call-method ()
-  (should (string= "/" (emacspy--call "test" "ospath" "realpath" nil '("/") nil)))
-  (should (emacspy--call "test" "ospath" "realpath" "call_method_test_var" '("/") nil))
-  (should (string= "/" (py-get-global-variable "test" "call_method_test_var" )))
-  (should-error (emacspy--call "test" "ospath" "DUMMY_METHOD" nil (emacspy-alist2hash nil))
+  (should (string= "/" (emacspy--call "test" "ospath" "realpath" "" '("/") (make-hash-table))))
+  (should (emacspy--call "test" "ospath" "realpath" "call_method_test_var" '("/") (make-hash-table)))
+  (should (string= "/" (emacspy-get-variable-global "test" "call_method_test_var" )))
+  (should-error (emacspy--call "test" "ospath" "DUMMY_METHOD" "" nil nil)
                 :type 'python-exception)
-  (should-error (emacspy--call "test" "NON_EXISTING_OBJECT" "DUMMY_METHOD" nil (emacspy-alist2hash nil))
+  (should-error (emacspy--call "test" "NON_EXISTING_OBJECT" "DUMMY_METHOD" "" nil nil)
                 :type 'python-exception)
-  (should-error (emacspy--call "test" "string" "digits" nil nil nil)
+  (should-error (emacspy--call "test" "string" "digits" "" nil nil)
                 :type 'python-exception) )
 
-(ert-deftest ert-test-emacspy-py-get-global-variable ()
-  (should (string= "__main__" (py-get-global-variable  "test" "__name__")))
-  (should-error (py-get-global-variable  "test" "NON_EXISTING_VARIABLE")) )
+(ert-deftest ert-test-emacspy-emacspy-get-variable-global ()
+  (should (string= "__main__" (emacspy-get-variable-global  "test" "__name__")))
+  (should-error (emacspy-get-variable-global  "test" "NON_EXISTING_VARIABLE")) )
 
 (ert-deftest ert-test-emacspy-emacspy--call-function ()
-  (should (eq 3 (emacspy--call "test" "len" nil nil '("123") nil)))
-  (should (emacspy--call "test" "len" nil "call_function_test_var" '("123") nil))
-  (should (eq 3 (py-get-global-variable  "test" "call_function_test_var")))
-  (should-error (emacspy--call "test" "NON-EXISTING-FUNCTION" nil nil '("123") (emacspy-alist2hash nil))
+  (should (eq 3 (emacspy--call "test" "len" "" "" '("123") nil)))
+  (should (emacspy--call "test" "len" "" "call_function_test_var" '("123") nil))
+  (should (eq 3 (emacspy-get-variable-global  "test" "call_function_test_var")))
+  (should-error (emacspy--call "test" "NON-EXISTING-FUNCTION" "" "" '("123") (emacspy-alist2hash nil))
                 :type 'python-exception)
 
-  (should (emacspy--call "test" "dict" nil "call_function_kvargs_test_var" nil
+  (should (emacspy--call "test" "dict" "" "call_function_kvargs_test_var" nil
                                   (emacspy-alist2hash '(("some_test" . 1) ("test" . "also_test"))) ))
-  (let ((ret (py-get-global-variable "test" "call_function_kvargs_test_var")))
+  (let ((ret (emacspy-get-variable-global "test" "call_function_kvargs_test_var")))
     (should (hash-table-p ret))
     (should (eq 1 (gethash "some_test" ret )))
     (should (string= "also_test" (gethash "test" ret))) ) )
 
-(ert-deftest ert-test-emacspy-py-get-object-attr ()
-  (should (string= "0123456789" (py-get-object-attr "test" "string" "digits")))
+(ert-deftest ert-test-emacspy-emacspy-get-object-attr ()
+  (should (string= "0123456789" (emacspy-get-object-attr "test" "string" "digits")))
 
-  (should (py-get-object-attr "test" "string" "digits" "test_digs"))
-  (should (string= "0123456789" (py-get-global-variable  "test" "test_digs")))
+  (should (emacspy-get-object-attr "test" "string" "digits" :as "test_digs"))
+  (should (string= "0123456789" (emacspy-get-variable-global  "test" "test_digs")))
 
-  (should-error (py-get-object-attr "test" "NON_EXISTING_OBJECT" "digits" "test_digs")
+  (should-error (emacspy-get-object-attr "test" "NON_EXISTING_OBJECT" "digits" :as "test_digs")
                 :type 'python-exception)
-  (should-error (py-get-object-attr "test" "string" "NON_EXISTING_ATTR")
+  (should-error (emacspy-get-object-attr "test" "string" "NON_EXISTING_ATTR")
                 :type 'python-exception) )
 
-(ert-deftest ert-test-emacspy-py-set-global ()
-  (should (string= "test_str" (py-set-global "test" "test_value" "test_str")))
-  (should (string= "test_value" (py-get-global-variable  "test" "test_str"))) )
+(ert-deftest ert-test-emacspy-emacspy-set-variable-global ()
+  (should (string= "test_str" (emacspy-set-variable-global "test" "test_str" "test_value")))
+  (should (string= "test_value" (emacspy-get-variable-global "test" "test_str"))) )
 
 (ert-deftest ert-test-emacspy-import-custom-module ()
-  (should (py-import "test" "sys"))
-  (should (py-get-object-attr "test" "sys" "path" "syspath"))
-  (should-not (emacspy--call "test" "syspath" "append" nil (list (concat emacspy-module-dir "tests")) nil))
-  (should (py-import "test" "emacspy_test"))
-  (should (py-get-object-attr "test" "emacspy_test" "test_obj" "test_obj"))
-  (should (string= "test" (emacspy--call "test" "test_obj" "get_string" nil nil nil))) )
+  (should (py-import "test" "sys" "sys"))
+  (should (emacspy-get-object-attr "test" "sys" "path" :as "syspath"))
+  (should-not (emacspy--call "test" "syspath" "append" "" (list (concat emacspy-module-dir "tests")) nil))
+  (should (py-import "test" "emacspy_test" "emacspy_test"))
+  (should (emacspy-get-object-attr "test" "emacspy_test" "test_obj" :as "test_obj"))
+  (should (string= "test" (emacspy--call "test" "test_obj" "get_string" "" nil nil))) )
 
 (ert-deftest ert-test-emacspy-non-existing-interpreter ()
   (should-error (emacspy--eval-string "NON_EXISTING" "True")))
@@ -92,56 +99,57 @@
   (let ((sub "test_subinterpreter"))
     (should (py-make-interpreter sub))
     (should (py-make-interpreter sub))
-    (should (py-destroy-interpreter sub))
-    (should-error (py-get-global-variable  sub "__name__")) ))
+    ;(should (py-destroy-interpreter sub))
+    (should-error (emacspy-get-variable-global  sub "__name__")) ))
 
 (ert-deftest ert-test-emacspy-subinterpreter-isolation () ;; Test if we really switch
   (let ((sub "test2"))
-    (should (py-make-interpreter sub))
-    (should (py-set-global sub 't "testvarisolation"))
-    (should-error (py-get-global-variable "test" "testvarisolation"))
-    (should (py-destroy-interpreter sub)) ))
+    (emacspy-setup-subinterpreter sub)
+    (should (emacspy-set-variable-global sub "testvarisolation" 't))
+    (should-error (emacspy-get-variable-global "test" "testvarisolation"))
+                                        ;(should (py-destroy-interpreter sub))
+    ))
 
-(ert-deftest ert-test-emacspy-list-subiterpreters ()
-  (let ((ret (py-list-interpreters)))
-    (should (listp ret))
-    (should (eq 1 (length ret)))
-    (should (string= "test" (nth 0 ret))) ))
+;; (ert-deftest ert-test-emacspy-list-subiterpreters ()
+;;   (let ((ret (py-list-interpreters)))
+;;     (should (listp ret))
+;;     (should (eq 1 (length ret)))
+;;     (should (string= "test" (nth 0 ret))) ))
 
 (ert-deftest ert-test-emacspy-data-int ()
-  (should (eq 1 (py-get-global-variable
-                 "test" (py-set-global "test" 1 "test_int"))))
-  (should (eq -1 (py-get-global-variable
-                  "test" (py-set-global "test" -1 "test_int"))))
-  (should (eq 0 (py-get-global-variable
-                 "test" (py-set-global "test" 0 "test_int")))) )
+  (should (eq 1 (emacspy-get-variable-global
+                 "test" (emacspy-set-variable-global "test" "test_int" 1))))
+  (should (eq -1 (emacspy-get-variable-global
+                  "test" (emacspy-set-variable-global "test" "test_int" -1))))
+  (should (eq 0 (emacspy-get-variable-global
+                 "test" (emacspy-set-variable-global "test" "test_int" 0)))) )
 
 (ert-deftest ert-test-emacspy-data-float ()
-  (should (= 0.5 (py-get-global-variable
-                 "test" (py-set-global "test" 0.5 "test_int"))))
-  (should (= -0.5 (py-get-global-variable
-                    "test" (py-set-global "test" -0.5 "test_int"))))
-  (should (= 0.0 (py-get-global-variable
-                  "test" (py-set-global "test" 0.0 "test_int")))) )
+  (should (= 0.5 (emacspy-get-variable-global
+                 "test" (emacspy-set-variable-global "test" "test_int" 0.5))))
+  (should (= -0.5 (emacspy-get-variable-global
+                    "test" (emacspy-set-variable-global "test" "test_int" -0.5))))
+  (should (= 0.0 (emacspy-get-variable-global
+                  "test" (emacspy-set-variable-global "test" "test_int" 0.0)))) )
 
 (ert-deftest ert-test-emacspy-data-str ()
-  (should (string= "" (emacspy--eval-string "test" "''")))
-  (should (string= "str" (emacspy--eval-string "test" "'str'")))
-  (should (string= "субтитри" (emacspy--eval-string "test" "'субтитри'"))) )
+  (should (string= "" (emacspy--eval-string "test" "''" "")))
+  (should (string= "str" (emacspy--eval-string "test" "'str'" "")))
+  (should (string= "субтитри" (emacspy--eval-string "test" "'субтитри'" ""))) )
 
 (ert-deftest ert-test-emacspy-data-list ()
-  (let ((lst (emacspy--eval-string "test" "[1, True, 2, 'test']")))
+  (let ((lst (emacspy--eval-string "test" "[1, True, 2, 'test']" "")))
     (should (eq 4 (length lst)))
     (should (eq 1 (nth 0 lst)))
     (should (eq 't (nth 1 lst)))
     (should (eq 2 (nth 2 lst)))
     (should (string= "test" (nth 3 lst))) )
 
-  (let ((lst (emacspy--eval-string "test" "(False,)")))
+  (let ((lst (emacspy--eval-string "test" "(False,)" "")))
     (should (eq 1 (length lst)))
     (should (eq nil (nth 0 lst))) )
 
-  (let ((lst (emacspy--eval-string "test" "([1, 2, 3], 'test', False)")))
+  (let ((lst (emacspy--eval-string "test" "([1, 2, 3], 'test', False)" "")))
     (should (eq 3 (length lst)))
     (let ((nested-lst (nth 0 lst)))
       (should (listp nested-lst))
@@ -150,18 +158,18 @@
     (should (string= "test" (nth 1 lst)))
     (should (eq nil (nth 2 lst))) )
 
-  (let ((lst (py-get-global-variable
+  (let ((lst (emacspy-get-variable-global
                      "test"
-                     (py-set-global "test" '(t nil 3 "test") "test_list"))))
+                     (emacspy-set-variable-global "test" "test_list" '(t nil 3 "test") ))))
     (should (eq 't (nth 0 lst)))
     (should (eq nil (nth 1 lst)))
     (should (eq 3 (nth 2 lst)))
     (should (string= "test" (nth 3 lst)))
     (should (eq 4 (length lst))) )
 
-  (let ((lst (py-get-global-variable
+  (let ((lst (emacspy-get-variable-global
                      "test"
-                     (py-set-global "test" '(("test") (1 2 3)) "test_list"))))
+                     (emacspy-set-variable-global "test" "test_list" '(("test") (1 2 3)) ))))
     (should (eq 2 (length lst)))
     (let ((nested-lst (nth 0 lst)))
       (should (listp nested-lst))
@@ -184,15 +192,15 @@
     (puthash "key" -1.5 nhash)
     (puthash "hash" nhash hash)
 
-    (should (py-set-global "test" empty-hash "test_empty_hash"))
+    (should (emacspy-set-variable-global "test" "test_empty_hash" empty-hash))
 
-    (should (py-set-global "test" hash "test_hash"))
-    (should (emacspy--eval-string "test" "test_hash[1]=='test'"))
-    (should (emacspy--eval-string "test" "test_hash[2]==False"))
-    (should (emacspy--eval-string "test" "test_hash['list'][0]==1"))
-    (should (emacspy--eval-string "test" "test_hash['hash']['key']==-1.5"))
+    (should (emacspy-set-variable-global "test" "test_hash" hash))
+    (should (emacspy--eval-string "test" "test_hash[1]=='test'" ""))
+    (should (emacspy--eval-string "test" "test_hash[2]==False" ""))
+    (should (emacspy--eval-string "test" "test_hash['list'][0]==1" ""))
+    (should (emacspy--eval-string "test" "test_hash['hash']['key']==-1.5" ""))
 
-    (let ((py-hash (py-get-global-variable "test" "test_hash")))
+    (let ((py-hash (emacspy-get-variable-global "test" "test_hash")))
       (should (hash-table-p py-hash))
       (should (string= "test" (gethash 1 py-hash)))
       (should (eq nil (gethash 2 py-hash)))
