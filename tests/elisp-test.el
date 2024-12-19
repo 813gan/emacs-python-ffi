@@ -1,9 +1,15 @@
+(add-to-list 'load-path ".")
+(load "emacspy")
+(emacspy-setup-subinterpreter "test")
+(py-import "test" "string" "string")
+(py-import "test" "os.path" "ospath")
+
 (ert-deftest ert-test-emacspy-elisp-import ()
   (should-error (emacspy-import-py "test"
 				   (from "sys" import "NON_EXISTING") ))
   (should (emacspy-import-py "test"
 			     (from "zoneinfo" import "ZoneInfo") ))
-  (should (emacspy--eval-string "test" "'ZoneInfo' in globals()")) )
+  (should (emacspy-eval-string "test" "'ZoneInfo' in globals()")) )
 
 (ert-deftest ert-test-emacspy-call ()
   (should (emacspy-set-variable-global "test" "test_format_str" "{}{}"))
