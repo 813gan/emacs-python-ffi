@@ -3,7 +3,7 @@
 ;; Copyright (C) 2024 zielmicha, 813gan
 
 ;; URL: https://github.com/zielmicha/emacspy
-;; Author: zielmicha, 813gan
+;; Author: 813gan
 ;; Keywords: python
 ;; Version: 1.0
 ;; Package: emacspy
@@ -21,7 +21,7 @@
 (defvar emacspy-python-name "python3"
   "Name of python executable.")
 (defvar emacspy-module-dir (file-name-directory (or load-file-name buffer-file-name))
-  "Directory containing emacspy_module.so.")
+  "Directory containing emacspy.")
 
 (defun emacspy--hash-table-to-lists (hash)
   "Utility function that convert `HASH' into (list keys values)."
@@ -37,6 +37,12 @@
     (cl-mapcar (lambda (k v) (puthash k v hash))
      keys values)
     hash))
+
+;; https://www.gnu.org/software/emacs/manual/html_node/elisp/Error-Symbols.html
+(define-error 'emacspy-error "Generic emacspy error")
+(define-error 'python-exception "Python exception was raised" 'emacspy-error) ;; TODO emacspy- prefix
+(define-error 'emacspy-conversion-from-elisp-failed "emacspy-conversion-from-elisp-failed" 'emacspy-error)
+(define-error 'emacspy-conversion-from-python-failed  "emacspy-conversion-from-python-failed" 'emacspy-error)
 
 (require 'emacspy_module)
 
@@ -80,6 +86,7 @@
 (defun emacspy--ensure-str (thing)
   (cond
    ((stringp thing) thing)
+   ((not thing) "")
    ((symbolp thing) (symbol-name thing)) ))
 
 ;; emacspy public API
@@ -109,7 +116,7 @@
   "Import modules `MODULE' in `SUBINTERPRETER' and optionally bind it as `AS'."
   (if as
       (py-import subinterpreter module as)
-    (py-import subinterpreter module)))
+    (py-import subinterpreter module module)))
 
 (defun emacspy-python-pip-install (subinterpreter packages &optional virtualenv)
   "Install packages for `SUBINTERPRETER' from string list `PACKAGES'."
@@ -141,30 +148,33 @@ https://docs.python.org/3/library/sys.html#sys.base_prefix"
 (defun emacspy-setup-subinterpreter (subinterpreter &rest pythonpaths)
   "Create Python subinterpreter called `SUBINTERPRETER' and add strings `PYTHONPATHS' to `sys.path'."
   (py-make-interpreter subinterpreter)
+  ;; emacspy-get-variable-global and emacspy-set-variable-global needs `__emacspy_globals'.
+  (emacspy--eval-string subinterpreter "globals()" "__emacspy_globals")
   (emacspy-import subinterpreter "sys" "__emacspy_sys")
-  (py-get-object-attr subinterpreter "__emacspy_sys" "path" "__emacspy_syspath")
-  (emacspy--call subinterpreter "__emacspy_syspath" "append" nil
-                 (list emacspy-module-dir) nil)
+  (emacspy-get-object-attr subinterpreter "__emacspy_sys" "path" :as "__emacspy_syspath")
+  (emacspy--call subinterpreter "__emacspy_syspath" "append" ""
+                 (list emacspy-module-dir) (make-hash-table))
   (when (python-environment-exists-p subinterpreter)
     (dolist (path (python-environment-packages-paths subinterpreter))
-      (emacspy--call subinterpreter "__emacspy_syspath" "append" nil (list path) nil)))
+      (emacspy--call subinterpreter "__emacspy_syspath" "append" "" (list path) (make-hash-table))))
   (dolist (path pythonpaths)
-    (emacspy--call subinterpreter "__emacspy_syspath" "append" nil (list path) nil)) )
+    (emacspy--call subinterpreter "__emacspy_syspath" "append" "" (list path) (make-hash-table))) )
 
 (defmacro emacspy-import-py (subinterpreter &rest import-defs)
   "Execute imports inside `SUBINTERPRETER' according to `IMPORT-DEFS'."
   (cons 'progn (mapcar (apply-partially 'emacspy--import-py-get-import subinterpreter)
                        import-defs)))
 
-(cl-defmacro emacspy-get-variable-global (subinterpreter name)
+(defun emacspy-get-variable-global (subinterpreter name)
   "Get global variable named `NAME' from `SUBINTERPRETER'."
   (let* ((name_str (emacspy--ensure-str name)))
-    (py-get-global-variable subinterpreter name_str)))
+    (emacspy--call subinterpreter "__emacspy_globals" "__getitem__" "" (list name_str) (make-hash-table))))
 
-(cl-defmacro emacspy-set-variable-global (subinterpreter name value)
-  "Get global variable named `NAME' from `SUBINTERPRETER' to `VALUE'."
+(defun emacspy-set-variable-global (subinterpreter name value)
+  "Set global variable named `NAME' from `SUBINTERPRETER' to `VALUE'. Return `NAME'."
   (let* ((name_str (emacspy--ensure-str name)))
-    (py-set-global subinterpreter value name_str)))
+    (emacspy--call subinterpreter "__emacspy_globals" "__setitem__" "" (list name value) (make-hash-table))
+    name_str))
 
 (cl-defmacro emacspy-get-object-attr (subinterpreter name &optional field_name &key as &allow-other-keys)
   ""
@@ -172,8 +182,10 @@ https://docs.python.org/3/library/sys.html#sys.base_prefix"
          (name_split (save-match-data (split-string name_str "\\.")))
          (obj_name (nth 0 name_split))
          (field_name (or (nth 1 name_split) field_name)))
-    (list 'py-get-object-attr
-          subinterpreter obj_name field_name as)))
+    (list 'emacspy--call
+          subinterpreter name "__getattribute__" (or as "") (list 'list field_name) (make-hash-table))))
+
+;;; TODO emacspy-set-object-attr
 
 (cl-defmacro emacspy-call (subinterpreter name &rest args &key as kwargs &allow-other-keys)
   ""
@@ -182,9 +194,10 @@ https://docs.python.org/3/library/sys.html#sys.base_prefix"
   (let* ((name_str (emacspy--ensure-str name))
          (name_split (save-match-data (split-string name_str "\\.")))
          (obj_name (nth 0 name_split))
-         (method_name (nth 1 name_split)))
+         (method_name (nth 1 name_split))
+         (as-str (emacspy--ensure-str as)) )
     `(emacspy--call
-      ,subinterpreter ,obj_name ,method_name ,as ,(cons 'list args) (emacspy-kwargs-plist2hash ,kwargs))))
+      ,subinterpreter ,obj_name ,method_name ,as-str ,(cons 'list args) (emacspy-kwargs-plist2hash ,kwargs))))
 
 (defun emacspy-exec-string (subinterpreter string)
   "Exec (PyRun_SimpleString) `STRING' in `SUBINTERPRETER'.  There is no return value or details about exception."
@@ -192,7 +205,7 @@ https://docs.python.org/3/library/sys.html#sys.base_prefix"
 
 (cl-defun emacspy-eval-string (subinterpreter string &key as)
   "Eval (PyRun_String) `STRING' in `SUBINTERPRETER' optionally binding result to variable named after keyword argument `AS'."
-  (emacspy--eval-string subinterpreter string as))
+  (emacspy--eval-string subinterpreter string (or as "")))
 
 (provide 'emacspy)
 
