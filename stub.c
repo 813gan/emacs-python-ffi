@@ -1,8 +1,12 @@
+#define _POSIX_C_SOURCE 200809L
 #include <Python.h>
+#include <assert.h>
 #include <dlfcn.h>
-#include <signal.h>
+#include <pthread.h>
 #include <stdbool.h>
-#include <threads.h> // https://en.cppreference.com/w/c/thread
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
 
 #include "datatypes.h"
 #include "emacs-module.h"
@@ -30,10 +34,10 @@ const python_function call_py_e = 6;
 #define SYM(_EMACSPY_SYMBOLNAME) \
 	ENV->intern(ENV, _EMACSPY_SYMBOLNAME) // static function instead?
 
-cnd_t ARG_COND;
-mtx_t ARG_MUTEX;
-mtx_t RET_MUTEX;
-thrd_t EMACSPY_THREAD = 0;
+pthread_cond_t ARG_COND;
+pthread_mutex_t ARG_MUTEX;
+pthread_mutex_t RET_MUTEX;
+pthread_t EMACSPY_THREAD = 0;
 
 struct python_call PYTHON_CALL;
 struct python_return PYTHON_RET;
@@ -224,14 +228,21 @@ emacs_value c2elisp(emacs_env *ENV, struct argument arg) {
 	}
 	return ret;
 }
-void raise_py_init_fail() {
-	mtx_lock(&ARG_MUTEX);
-	PYTHON_CALL.status = initialisation_fail;
-	mtx_unlock(&ARG_MUTEX);
-	thrd_exit(0);
+
+void worker_assert_null(int retcode) {
+	if (0 != retcode) {
+		pthread_exit(NULL);
+	}
 }
 
-int python_worker_thread_f(void *data) {
+void raise_py_init_fail() {
+	worker_assert_null(pthread_mutex_lock(&ARG_MUTEX));
+	PYTHON_CALL.status = initialization_fail;
+	worker_assert_null(pthread_mutex_unlock(&ARG_MUTEX));
+	pthread_exit(NULL);
+}
+
+void *python_worker_thread_f(void *data) {
 	(void)(data); // Mute unused argument warning
 	assert(!Py_IsInitialized());
 	dlopen(LIBPYTHON_NAME, RTLD_LAZY | RTLD_GLOBAL);
@@ -254,19 +265,17 @@ int python_worker_thread_f(void *data) {
 	init_interpreter_list();
 	PyEval_SaveThread();
 
-	int wait_status;
 	python_function func;
 	struct python_return ret;
 	struct python_call call;
 	while (true) {
-		mtx_lock(&ARG_MUTEX); // TODO error handling
+		worker_assert_null(pthread_mutex_lock(&ARG_MUTEX));
 		PYTHON_CALL.status = ready;
-		wait_status = cnd_wait(&ARG_COND, &ARG_MUTEX);
-		assert(thrd_success == wait_status);
+		worker_assert_null(pthread_cond_wait(&ARG_COND, &ARG_MUTEX));
 		if (null_e == PYTHON_CALL.func) {
-			mtx_lock(&RET_MUTEX);
+			worker_assert_null(pthread_mutex_lock(&RET_MUTEX));
 			PYTHON_RET.status = invalid;
-			mtx_unlock(&RET_MUTEX);
+			worker_assert_null(pthread_mutex_unlock(&RET_MUTEX));
 			continue; // what the fuck is spurious wakeup?
 		}
 		call = PYTHON_CALL;
@@ -274,8 +283,9 @@ int python_worker_thread_f(void *data) {
 		PYTHON_CALL.func = null_e;
 		PYTHON_CALL.args = NULL;
 		PYTHON_CALL.status = in_progress;
-		mtx_unlock(&ARG_MUTEX);
+		worker_assert_null(pthread_mutex_unlock(&ARG_MUTEX));
 
+		worker_assert_null(pthread_mutex_lock(&RET_MUTEX));
 		if (call_py_e == func) {
 			ret.data = call_py(call);
 		} else if (eval_string_e == func) {
@@ -291,38 +301,50 @@ int python_worker_thread_f(void *data) {
 			abort();
 		}
 		ret.status = ok;
-		mtx_lock(&RET_MUTEX);
 		PYTHON_RET = ret;
-		mtx_unlock(&RET_MUTEX);
+		worker_assert_null(pthread_mutex_unlock(&RET_MUTEX));
 	}
 }
 
-int wait_for_worker() {
+worker_wait_result wait_for_worker() {
 	while (true) {
 		/* if (env->should_quit (env)) { */ // TODO
-		/*	return 5; */
+		/*	return should_quit_wwr; */
 		/* } */
-		mtx_lock(&ARG_MUTEX); // todo error handling
+		// TODO it hangs here on dead worker
+		int lock_status = pthread_mutex_lock(&ARG_MUTEX);
+		if (EOWNERDEAD == lock_status)
+			return worker_dead_wwr;
+
+		assert(0 == lock_status);
 		switch (PYTHON_CALL.status) {
 		case ready:
-			mtx_unlock(&ARG_MUTEX);
-			goto finish;
-		case initialisation_fail:
-			mtx_unlock(&ARG_MUTEX);
-			return 4;
+			assert(0 == pthread_mutex_unlock(&ARG_MUTEX));
+			return ready_wwr;
+		case initialization_fail:
+			assert(0 == pthread_mutex_unlock(&ARG_MUTEX));
+			return initialization_fail_wwr;
 		case in_progress:
 		case starting:
-			mtx_unlock(&ARG_MUTEX);
-			thrd_yield(); // add sleep?
+			assert(0 == pthread_mutex_unlock(&ARG_MUTEX));
 			break;
 		}
 	}
-finish:
-	return 0;
 }
 
 emacs_value call_function(emacs_env *env, ptrdiff_t nargs, emacs_value *args, void *selector) {
-	assert(0 == wait_for_worker());
+	switch (wait_for_worker()) {
+	case ready_wwr:
+		break;
+	case initialization_fail_wwr:
+		emacs_signal_error(env, "emacspy-error-worker-init-failed",
+		    "Python didn't initialize. Python version mismatch?");
+		return NULL;
+	case worker_dead_wwr:
+		emacs_signal_error(env, "emacspy-error-worker-dead",
+		    "Python worker died. Insufficient RAM?");
+		return NULL;
+	}
 	struct argument *cargs = malloc(
 	    nargs * sizeof(struct argument)); // free in convert_args_c2py
 	for (ptrdiff_t i = 0; i < nargs; ++i) {
@@ -330,41 +352,56 @@ emacs_value call_function(emacs_env *env, ptrdiff_t nargs, emacs_value *args, vo
 		// abort on NULL==cargs[i]
 	}
 
-	mtx_lock(&ARG_MUTEX); // TDOO error handling
+	pthread_mutex_lock(&ARG_MUTEX);
 	PYTHON_CALL.func = *(python_function *)selector;
 	assert(null_e != PYTHON_CALL.func);
 	assert(PYTHON_CALL.status == ready);
 	PYTHON_CALL.args = cargs;
 	PYTHON_CALL.nargs = nargs;
-	mtx_unlock(&ARG_MUTEX);
-	cnd_signal(&ARG_COND);
+	assert(0 == pthread_mutex_unlock(&ARG_MUTEX));
+	pthread_cond_signal(&ARG_COND);
 
 	// https://phst.eu/emacs-modules#quitting
-	bool waiting = true;
-	while (waiting) {
+	int lock_status;
+	bool quit_not_tried = true;
+	struct timespec timeout_time;
+	while (true) {
 		switch (env->process_input(env)) {
 		case emacs_process_input_continue:
 			break;
 		case emacs_process_input_quit:
-			// TODO
-			// raise(SIGINT);
+			if (quit_not_tried) {
+				printf("quit attempt\n");
+				// raise(SIGIN2T);
+				quit_not_tried = false;
+			}
 			break;
 		}
+		clock_gettime(CLOCK_REALTIME, &timeout_time);
+		timeout_time.tv_sec += 1;
+		lock_status = pthread_mutex_timedlock(&RET_MUTEX, &timeout_time);
+		assert(
+		    0 == lock_status || ETIMEDOUT == lock_status || EOWNERDEAD == lock_status);
 
-		mtx_lock(&RET_MUTEX); // TDOO error handling
-		if (wait != PYTHON_RET.status) {
-			waiting = false;
-		} else {
-			mtx_unlock(&RET_MUTEX);
-			thrd_yield(); // add sleep?
+		if (ETIMEDOUT == lock_status) {
+			continue;
+		} else if (0 == lock_status && wait != PYTHON_RET.status) {
+			break;
+		} else if (0 == lock_status && wait == PYTHON_RET.status) {
+			assert(0 == pthread_mutex_unlock(&RET_MUTEX));
+			continue;
+		} else if (EOWNERDEAD == lock_status) {
+			emacs_signal_error(env, "emacspy-error-worker-dead",
+			    "Python worker died. Insufficient RAM?");
+			return NULL;
 		}
 	}
-	struct argument py_ret_data = PYTHON_RET.data;
-	enum python_return_status ret_status = PYTHON_RET.status;
-	PYTHON_RET.status = wait;
-	mtx_unlock(&RET_MUTEX);
 
-	assert(ret_status != invalid);
+	struct argument py_ret_data = PYTHON_RET.data;
+	// enum python_return_status ret_status = PYTHON_RET.status;
+	PYTHON_RET.status = wait;
+	assert(0 == pthread_mutex_unlock(&RET_MUTEX));
+
 	return c2elisp(env,
 	    py_ret_data); // TODO if i implement c-g with aborting then there is mem leak ehere
 }
@@ -393,14 +430,29 @@ int emacs_module_init(struct emacs_runtime *runtime) {
 	}
 
 	emacs_env *env = runtime->get_environment(runtime);
-	int s = cnd_init(&ARG_COND);
-	assert(thrd_success == s);
-	mtx_init(&ARG_MUTEX, mtx_plain);
-	mtx_init(&RET_MUTEX, mtx_plain);
-
+	int s = pthread_cond_init(&ARG_COND, NULL);
+	if (0 != s)
+		return 6;
+	pthread_mutexattr_t mutex_params;
+	s = pthread_mutexattr_init(&mutex_params);
+	if (0 != s)
+		return 6;
+	s = pthread_mutexattr_settype(&mutex_params, PTHREAD_MUTEX_ERRORCHECK);
+	if (0 != s)
+		return 6;
+	s = pthread_mutexattr_setrobust(&mutex_params, PTHREAD_MUTEX_ROBUST);
+	if (0 != s)
+		return 6;
+	s = pthread_mutex_init(&ARG_MUTEX, &mutex_params);
+	if (0 != s)
+		return 6;
+	s = pthread_mutex_init(&RET_MUTEX, &mutex_params);
+	if (0 != s)
+		return 6;
+	pthread_mutexattr_destroy(&mutex_params);
 	PYTHON_CALL.status = starting;
 
-	int status = thrd_create(&EMACSPY_THREAD, python_worker_thread_f, NULL);
+	int status = pthread_create(&EMACSPY_THREAD, NULL, &python_worker_thread_f, NULL);
 	if (status != 0) {
 		return 3;
 	}

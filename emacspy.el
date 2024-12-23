@@ -40,6 +40,8 @@
 
 ;; https://www.gnu.org/software/emacs/manual/html_node/elisp/Error-Symbols.html
 (define-error 'emacspy-error "Generic emacspy error")
+(define-error 'emacspy-error-worker-dead "Python worker thread died." 'emacspy-error)
+(define-error 'emacspy-error-worker-init-failed "Python initialization failed." 'emacspy-error)
 (define-error 'python-exception "Python exception was raised" 'emacspy-error) ;; TODO emacspy- prefix
 (define-error 'emacspy-conversion-from-elisp-failed "emacspy-conversion-from-elisp-failed" 'emacspy-error)
 (define-error 'emacspy-conversion-from-python-failed  "emacspy-conversion-from-python-failed" 'emacspy-error)
