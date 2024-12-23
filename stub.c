@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <dlfcn.h>
 #include <pthread.h>
+#include <signal.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
@@ -30,6 +31,8 @@ const python_function import_module_e = 3;
 const python_function eval_string_e = 4;
 const python_function exec_string_e = 5;
 const python_function call_py_e = 6;
+
+#define PY_INTERRUPT_SIGNAL 42
 
 #define SYM(_EMACSPY_SYMBOLNAME) \
 	ENV->intern(ENV, _EMACSPY_SYMBOLNAME) // static function instead?
@@ -242,6 +245,12 @@ void raise_py_init_fail() {
 	pthread_exit(NULL);
 }
 
+void python_worker_interrupt_handler(int signo) {
+	if (PY_INTERRUPT_SIGNAL == signo) {
+		PyErr_SetInterrupt();
+	}
+}
+
 void *python_worker_thread_f(void *data) {
 	(void)(data); // Mute unused argument warning
 	assert(!Py_IsInitialized());
@@ -264,6 +273,15 @@ void *python_worker_thread_f(void *data) {
 
 	init_interpreter_list();
 	PyEval_SaveThread();
+
+	struct sigaction act = { 0 };
+	act.sa_handler = &python_worker_interrupt_handler;
+	assert(0 == sigaction(PY_INTERRUPT_SIGNAL, &act, NULL));
+
+	sigset_t mask;
+	sigemptyset(&mask);
+	sigaddset(&mask, PY_INTERRUPT_SIGNAL);
+	pthread_sigmask(SIG_UNBLOCK, &mask, NULL);
 
 	python_function func;
 	struct python_return ret;
@@ -372,7 +390,7 @@ emacs_value call_function(emacs_env *env, ptrdiff_t nargs, emacs_value *args, vo
 		case emacs_process_input_quit:
 			if (quit_not_tried) {
 				printf("quit attempt\n");
-				// raise(SIGIN2T);
+				assert(0 == pthread_kill(EMACSPY_THREAD, PY_INTERRUPT_SIGNAL));
 				quit_not_tried = false;
 			}
 			break;
@@ -451,6 +469,11 @@ int emacs_module_init(struct emacs_runtime *runtime) {
 		return 6;
 	pthread_mutexattr_destroy(&mutex_params);
 	PYTHON_CALL.status = starting;
+
+	sigset_t mask;
+	sigemptyset(&mask);
+	sigaddset(&mask, PY_INTERRUPT_SIGNAL);
+	pthread_sigmask(SIG_BLOCK, &mask, NULL);
 
 	int status = pthread_create(&EMACSPY_THREAD, NULL, &python_worker_thread_f, NULL);
 	if (status != 0) {
