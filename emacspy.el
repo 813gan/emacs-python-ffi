@@ -196,7 +196,7 @@ https://docs.python.org/3/library/sys.html#sys.base_prefix"
   (let* ((name_str (emacspy--ensure-str name))
          (name_split (save-match-data (split-string name_str "\\.")))
          (obj_name (nth 0 name_split))
-         (method_name (nth 1 name_split))
+         (method_name (emacspy--ensure-str (nth 1 name_split)))
          (as-str (emacspy--ensure-str as)) )
     `(emacspy--call
       ,subinterpreter ,obj_name ,method_name ,as-str ,(cons 'list args) (emacspy-kwargs-plist2hash ,kwargs))))
