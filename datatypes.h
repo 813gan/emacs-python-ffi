@@ -1,8 +1,8 @@
 #ifndef DATATYPES_H
 #define DATATYPES_H
 
-#include <stddef.h>
 #include <stdbool.h>
+#include <stddef.h>
 
 typedef int python_function;
 
@@ -16,8 +16,15 @@ enum python_call_status {
 	ready,
 	in_progress,
 	starting,
-	initialisation_fail,
+	initialization_fail,
 };
+
+typedef enum worker_wait_result {
+	ready_wwr = 0,
+	initialization_fail_wwr = 1,
+	// should_quit_wwr = 2,
+	worker_dead_wwr = 3,
+} worker_wait_result;
 
 typedef enum argument_type {
 	integer_e,
@@ -68,7 +75,6 @@ struct argument {
 		hash_s hash;
 	};
 };
-
 
 typedef struct python_call {
 	python_function func;
