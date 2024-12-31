@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <dlfcn.h>
 #include <pthread.h>
+#include <signal.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
@@ -30,6 +31,8 @@ const python_function import_module_e = 3;
 const python_function eval_string_e = 4;
 const python_function exec_string_e = 5;
 const python_function call_py_e = 6;
+
+#define PY_INTERRUPT_SIGNAL 42
 
 #define SYM(_EMACSPY_SYMBOLNAME) \
 	ENV->intern(ENV, _EMACSPY_SYMBOLNAME) // static function instead?
@@ -245,12 +248,18 @@ void raise_py_init_fail() {
 void *python_worker_thread_f(void *data) {
 	(void)(data); // Mute unused argument warning
 	assert(!Py_IsInitialized());
+
+	sigset_t mask;
+	sigemptyset(&mask);
+	sigaddset(&mask, PY_INTERRUPT_SIGNAL);
+	pthread_sigmask(SIG_UNBLOCK, &mask, NULL);
+
 	dlopen(LIBPYTHON_NAME, RTLD_LAZY | RTLD_GLOBAL);
 
 	PyConfig config;
 	PyStatus status;
 
-	PyConfig_InitPythonConfig(&config);
+	PyConfig_InitIsolatedConfig(&config);
 	status = PyConfig_SetString(&config, &config.home, BASE_PREFIX);
 	if (PyStatus_Exception(status)) {
 		raise_py_init_fail();
@@ -264,6 +273,20 @@ void *python_worker_thread_f(void *data) {
 
 	init_interpreter_list();
 	PyEval_SaveThread();
+
+	PyGILState_STATE gil_state = PyGILState_Ensure();
+	PyObject *signal_mod = PyImport_ImportModule("signal");
+	worker_assert_null(!signal_mod);
+	PyObject *default_int_handler = PyObject_GetAttrString(signal_mod,
+	    "default_int_handler");
+	worker_assert_null(!default_int_handler);
+	PyObject *result = PyObject_CallMethod(signal_mod, "signal", "iO", PY_INTERRUPT_SIGNAL,
+	    default_int_handler);
+	worker_assert_null(!result);
+	Py_DECREF(signal_mod);
+	Py_DECREF(default_int_handler);
+	Py_DECREF(result);
+	PyGILState_Release(gil_state);
 
 	python_function func;
 	struct python_return ret;
@@ -371,8 +394,7 @@ emacs_value call_function(emacs_env *env, ptrdiff_t nargs, emacs_value *args, vo
 			break;
 		case emacs_process_input_quit:
 			if (quit_not_tried) {
-				printf("quit attempt\n");
-				// raise(SIGIN2T);
+				assert(0 == pthread_kill(EMACSPY_THREAD, PY_INTERRUPT_SIGNAL));
 				quit_not_tried = false;
 			}
 			break;
@@ -452,11 +474,15 @@ int emacs_module_init(struct emacs_runtime *runtime) {
 	pthread_mutexattr_destroy(&mutex_params);
 	PYTHON_CALL.status = starting;
 
+	sigset_t mask;
+	sigemptyset(&mask);
+	sigaddset(&mask, PY_INTERRUPT_SIGNAL);
+	pthread_sigmask(SIG_BLOCK, &mask, NULL);
+
 	int status = pthread_create(&EMACSPY_THREAD, NULL, &python_worker_thread_f, NULL);
 	if (status != 0) {
 		return 3;
 	}
-
 	emacs_value args[] = { env->intern(env, "emacspy_module") };
 	env->funcall(env, env->intern(env, "provide"), 1, args);
 
