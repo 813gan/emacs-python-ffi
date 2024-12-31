@@ -1,11 +1,11 @@
 PYTHON ?= "python3"
 export EMACS ?= $(shell command -v emacs 2>/dev/null)
-CASK ?= $(shell which cask || echo ${HOME}/.local/bin/cask )
+export CASK ?= $(shell which cask || echo ${HOME}/.local/bin/cask )
 CLANGFORMAT := clang-format
 
 C_VERSION=-std=c11
 
-.PHONY: all clean clean_all clean_cask \
+.PHONY: all clean clean_all clean_cask test_c_g \
 	test test_module test_elisp test_formatting test_valgrind
 
 HARDENING_FLAGS := -fstack-protector -fstack-clash-protection -fcf-protection \
@@ -61,7 +61,7 @@ clean_cask:
 	rm -vfr .cask
 clean_all: clean_cask clean
 
-test: test_module test_elisp test_formatting
+test: test_module test_elisp test_formatting # test_c_g dont work in CI for some reason
 
 test_module: cask all
 	ulimit -c unlimited; ${CASK} emacs --module-assertions -batch -l ert \
@@ -88,3 +88,6 @@ test_valgrind: clean all .valgrind-python.supp
 
 test_formatting:
 	${CLANGFORMAT} --dry-run --Werror stub.c subinterpreter.c datatypes.h
+
+test_c_g: cask all
+	bash -x tests/test_c_g.sh
