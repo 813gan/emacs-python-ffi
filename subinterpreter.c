@@ -258,24 +258,30 @@ subintr_switch_data subinterpreter_switch(python_call cargs) {
 	subintr_switch_data ret;
 	ret.sub_interpreter = get_interpreter(interpreter_name);
 	ret.gil = PyGILState_Ensure();
-	ret.orig_tstate = NULL;
-	if (NULL ==
-	    ret.sub_interpreter) { // TODO dont use python expception outsude subinterpreter
-		PyErr_Format(PyExc_KeyError, "Subinterpreter '%s' does not exist.",
-		    interpreter_name);
-		PyGILState_Release(ret.gil);
-		return ret;
-	}
-	ret.orig_tstate = PyThreadState_Get();
-	PyThreadState_Swap(ret.sub_interpreter->python_interpreter);
+	// TEMPORARY WORKADOUND. we dont switch subinterpreter for now.
+	// uncomment all lines once github.com/813gan/emacs-python-ffi/issues/1 is done
+	/* ret.orig_tstate = NULL; */
+	/* if (NULL == */
+	/*     ret.sub_interpreter) { // TODO dont use python expception outsude subinterpreter
+	 */
+	/*	PyErr_Format(PyExc_KeyError, "Subinterpreter '%s' does not exist.", */
+	/*	    interpreter_name); */
+	/*	PyGILState_Release(ret.gil); */
+	/*	return ret; */
+	/* } */
+	/* ret.orig_tstate = PyThreadState_Get(); */
+	/* PyThreadState_Swap(ret.sub_interpreter->python_interpreter); */
 
 	return ret;
 }
 
 struct argument subinterpreter_return(PyObject *ret, subintr_switch_data switch_data) {
 	struct argument cret = py2c(ret);
-	if (switch_data.orig_tstate)
-		PyThreadState_Swap(switch_data.orig_tstate);
+	(void)(switch_data);
+	// TEMPORARY WORKADOUND. we dont switch subinterpreter for now.
+	// uncomment all lines below github.com/813gan/emacs-python-ffi/issues/1 is done
+	/* if (switch_data.orig_tstate) */
+	/*	PyThreadState_Swap(switch_data.orig_tstate); */
 	if (PyGILState_Check())
 		PyGILState_Release(switch_data.gil);
 	return cret;
@@ -284,39 +290,42 @@ struct argument subinterpreter_return(PyObject *ret, subintr_switch_data switch_
 argument make_interpreter(python_call cargs) {
 	char *interpreter_name = get_subinterpreter_name_from_call_data(cargs);
 	PyGILState_STATE gil = PyGILState_Ensure();
-	PyThreadState *tstate = NULL;
-	PyThreadState *orig_tstate = PyThreadState_Get();
+	// TEMPORARY WORKADOUND. we dont switch subinterpreter for now.
+	// uncomment all lines below github.com/813gan/emacs-python-ffi/issues/1 is done
+	/* PyThreadState *tstate = NULL; */
+	/* PyThreadState *orig_tstate = PyThreadState_Get(); */
 	argument ret;
 	ret.type = boolean_e;
 
-	struct interpr *maybe_existing_interpreter = get_interpreter(interpreter_name);
-	if (NULL != maybe_existing_interpreter) {
-		PyGILState_Release(gil);
-		ret.boolean = true;
-		return ret;
-	}
+	/* struct interpr *maybe_existing_interpreter = get_interpreter(interpreter_name); */
+	/* if (NULL != maybe_existing_interpreter) { */
+	/*	PyGILState_Release(gil); */
+	/*	ret.boolean = true; */
+	/*	return ret; */
+	/* } */
 
-	tstate = Py_NewInterpreter();
-	if (NULL == tstate) {
-		PyGILState_Release(gil);
-		ret.boolean = false;
-		return ret;
-	}
-	PyThreadState_Swap(tstate);
+	/* tstate = Py_NewInterpreter(); */
+	/* if (NULL == tstate) { */
+	/*	PyGILState_Release(gil); */
+	/*	ret.boolean = false; */
+	/*	return ret; */
+	/* } */
+	/* PyThreadState_Swap(tstate); */
 
 	unsigned int name_len = strnlen(interpreter_name, MAX_INTERPRETER_NAME_LEN) + 1;
 	char *name = malloc(name_len);
 	assert(name);
 	strncpy(name, interpreter_name, name_len);
 
-	PyObject *main_module = PyImport_AddModule("__main__");
-	PyThreadState_Swap(orig_tstate);
+	PyObject *main_module = Py_NewRef(PyImport_AddModule("__main__"));
+	assert(main_module);
+	/* PyThreadState_Swap(orig_tstate); */
 	PyGILState_Release(gil);
 
 	struct interpr *new_interpreter = malloc(sizeof(struct interpr));
-	assert(new_interpreter);
+	/* assert(new_interpreter); */
 	new_interpreter->name = name;
-	new_interpreter->python_interpreter = tstate;
+	/* new_interpreter->python_interpreter = tstate; */
 	new_interpreter->main_module = main_module;
 	LIST_INSERT_HEAD(&head, new_interpreter, entries);
 

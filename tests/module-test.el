@@ -95,20 +95,22 @@
   (should-error (progn (load "emacspy_module")
                        (load "emacspy_module"))))
 
-(ert-deftest ert-test-emacspy-create-destroy-subinterpreter ()
-  (let ((sub "test_subinterpreter"))
-    (should (py-make-interpreter sub))
-    (should (py-make-interpreter sub))
-    ;(should (py-destroy-interpreter sub))
-    (should-error (emacspy-get-variable-global  sub "__name__")) ))
+;; (ert-deftest ert-test-emacspy-create-destroy-subinterpreter ()
+;;   (let ((sub "test_subinterpreter"))
+;;     (should (py-make-interpreter sub))
+;;     (should (py-make-interpreter sub))
+;;     ;(should (py-destroy-interpreter sub))
+;;     (should-error (emacspy-get-variable-global  sub "__name__")) ))
 
-(ert-deftest ert-test-emacspy-subinterpreter-isolation () ;; Test if we really switch
-  (let ((sub "test2"))
-    (emacspy-setup-subinterpreter sub)
-    (should (emacspy-set-variable-global sub "testvarisolation" 't))
-    (should-error (emacspy-get-variable-global "test" "testvarisolation"))
-                                        ;(should (py-destroy-interpreter sub))
-    ))
+;; TEMPORARY WORKADOUND. we dont switch subinterpreter for now.
+;; uncomment all lines below once https://github.com/python/cpython/issues/113130 is fixed
+;; (ert-deftest ert-test-emacspy-subinterpreter-isolation () ;; Test if we really switch
+;;   (let ((sub "test2"))
+;;     (emacspy-setup-subinterpreter sub)
+;;     (should (emacspy-set-variable-global sub "testvarisolation" 't))
+;;     (should-error (emacspy-get-variable-global "test" "testvarisolation"))
+;;                                         ;(should (py-destroy-interpreter sub))
+;;     ))
 
 ;; (ert-deftest ert-test-emacspy-list-subiterpreters ()
 ;;   (let ((ret (py-list-interpreters)))
