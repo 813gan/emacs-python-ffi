@@ -183,11 +183,18 @@ https://docs.python.org/3/library/sys.html#sys.base_prefix"
   (let* ((name_str (emacspy--ensure-str name))
          (name_split (save-match-data (split-string name_str "\\.")))
          (obj_name (nth 0 name_split))
-         (field_name (or (nth 1 name_split) field_name)))
+         (field (or (nth 1 name_split) field_name)))
     (list 'emacspy--call
-          subinterpreter name "__getattribute__" (or as "") (list 'list field_name) (make-hash-table))))
+          subinterpreter obj_name "__getattribute__" (or as "") (list 'list field) (make-hash-table))))
 
-;;; TODO emacspy-set-object-attr
+(cl-defmacro emacspy-set-object-attr (subinterpreter name value &optional field_name)
+  ""
+  (let* ((name_str (emacspy--ensure-str name))
+         (name_split (save-match-data (split-string name_str "\\.")))
+         (obj_name (nth 0 name_split))
+         (field (or (nth 1 name_split) field_name)))
+    (list 'emacspy--call
+          subinterpreter obj_name "__setattr__" "" (list 'list field value) (make-hash-table))))
 
 (cl-defmacro emacspy-call (subinterpreter name &rest args &key as kwargs &allow-other-keys)
   ""

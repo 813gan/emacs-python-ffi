@@ -3,6 +3,7 @@
 (emacspy-setup-subinterpreter "test")
 (py-import "test" "string" "string")
 (py-import "test" "os.path" "ospath")
+(py-import "test" "operator" "operator")
 
 
 (ert-deftest ert-test-emacspy-py-import ()
@@ -40,6 +41,7 @@
   (should (string= "/" (emacspy--call "test" "ospath" "realpath" "" '("/") (make-hash-table))))
   (should (emacspy--call "test" "ospath" "realpath" "call_method_test_var" '("/") (make-hash-table)))
   (should (string= "/" (emacspy-get-variable-global "test" "call_method_test_var" )))
+  (should (eq 2 (emacspy--call "test" "operator" "add" "" '(1 1) (make-hash-table)) ))
   (should-error (emacspy--call "test" "ospath" "DUMMY_METHOD" "" nil nil)
                 :type 'python-exception)
   (should-error (emacspy--call "test" "NON_EXISTING_OBJECT" "DUMMY_METHOD" "" nil nil)

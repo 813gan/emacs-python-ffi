@@ -26,3 +26,12 @@
   (should (emacspy-eval-string "test" "True"))
   (should (emacspy-eval-string "test" "1" :as "elisp_test_eval_ret_test"))
   (should (eq 1 (emacspy-eval-string "test" "elisp_test_eval_ret_test"))) )
+
+
+(ert-deftest ert-test-emacspy-set-object-attr ()
+  (should (emacspy-exec-string "test" "class C: pass"))
+  (should (emacspy-exec-string "test" "c=C()"))
+  (should-not (emacspy-set-object-attr "test" "c.random_test_value" "v1"))
+  (should (string= "v1" (emacspy-get-object-attr "test" "c.random_test_value")))
+  (should-not (emacspy-set-object-attr "test" "c" "v2" "random_test_value"))
+  (should (string= "v2" (emacspy-get-object-attr "test" "c.random_test_value"))) )
