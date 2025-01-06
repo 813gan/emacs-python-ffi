@@ -1,5 +1,5 @@
 PYTHON ?= "python3"
-export EMACS ?= $(shell command -v emacs 2>/dev/null)
+export EMACS ?= $(shell which emacs 2>/dev/null)
 export CASK ?= $(shell which cask || echo ${HOME}/.local/bin/cask )
 CLANGFORMAT := clang-format
 
@@ -22,11 +22,13 @@ CLANGFORMAT := true # darwin form gh CI have no clang-format
 endif
 endif
 
-ifeq (, $(shell which pkg-config))
+ifeq (, $(shell pkg-config --help))
 $(error "pkg-config not found.")
 endif
 
-all: emacspy_module.so
+.DEFAULT_GOAL := emacspy_module.so
+
+all: emacspy_module.so emacs_python_ffi.html
 
 CASK_DIR := $(shell ${CASK} package-directory)
 $(CASK_DIR): Cask
@@ -34,8 +36,8 @@ $(CASK_DIR): Cask
 	@touch $(CASK_DIR)
 cask: $(CASK_DIR)
 
-IS_PYTHON_OLD := $(shell ${PYTHON} -c 'import platform;from packaging import version as v; \
-print("-DPYTHON311OLDER") if (v.parse(platform.python_version()) < v.parse("3.12.0")) else exit(0)')
+IS_PYTHON_OLD := $(shell ${PYTHON} -c 'from sys import version_info; \
+print("-DPYTHON311OLDER") if (version_info < (3, 12)) else exit(0)')
 
 # https://github.com/grisha/mod_python/issues/81#issuecomment-551655070
 emacspy_module.so: BLDLIBRARY=$(shell ${PYTHON} -c \
@@ -77,8 +79,7 @@ test_valgrind: clean emacspy_module.so .valgrind-python.supp
 	PYTHONMALLOC=malloc ${CASK} exec \
 		valgrind --tool=memcheck --suppressions=.valgrind-python.supp \
 		--leak-check=full --show-leak-kinds=all \
-		emacs -batch -l tests/prepare-tests.el -l ert -l tests/test.el \
-			-f ert-run-tests-batch-and-exit
+		${EMACS} -batch -l ert -l tests/module-test.el -f ert-run-tests-batch-and-exit
 
 .valgrind-python.supp:
 	wget -O .valgrind-python.supp \
