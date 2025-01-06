@@ -1,0 +1,113 @@
+#+TITLE: Emacs Python FFI
+
+Emacs dynamic module that implements foreign function interface for python.
+It allows usage of python modules in Elisp.
+
+* Installation
+
+there is no binary distribution now, so you need development tools to compile this module.
+
+_System dependencies_:
+
+- make
+- gcc
+- pkg-config
+- python>=3.10 with development tools;
+  it essentially means header Python.h must be present.
+  On Debian/Ubuntu you need package python-dev.
+
+If you compiled Python yourself and want to use it, then compile Emacs Python FFI with venv activated,
+or ~export PYTHON=~ with path to your exeutable before compilation.
+Custom Python build needs to be ~./configure~ d with ~--enable-shared~ flag.
+
+_Elisp dependencies_:
+
+- python-environment
+
+* Usage
+
+This module is going to (See [[*Bugs and limitations][Bugs and limitations]]) utilize Python subinterpreters to isolate Emacs modes using this module from each other.
+See [[https://docs.python.org/3/c-api/init.html#sub-interpreter-support][Pyhton documentation]] for details.
+
+Most of functions in this module takes ~subinterpreter~ as first argument.
+
+#+attr_texinfo: :options emacspy-python-environment-make subinterpreter &optional packages virtualenv
+#+begin_defun
+
+#+end_defun
+
+#+attr_texinfo: :options emacspy-call subinterpreter name &rest args &key as kwargs
+#+begin_defun
+Call functionn or method referenced by {{{var(name)}}}.
+{{{var(name)}}} can either take form of ~function_name~ or ~object_name.method_name~.
+Pass non-keyword arguments will be passed as positional arguments.
+Pass property list from :keyword argument {{{var(kwargs)}}} as keyword arguments.
+Bind result in global scope under name from :keyword argument {{{var(as)}}} or return it if {{{var(as)}}} is ~nil~.
+#+end_defun
+
+#+attr_texinfo: :options emacspy-get-variable-global subinterpreter name
+#+begin_defun
+Get global variable named {{{var(name)}}} from {{{var(subinterpreter)}}}.
+#+end_defun
+
+#+attr_texinfo: :options emacspy-set-variable-global subinterpreter name value
+#+begin_defun
+Set global variable named {{{var(name)}}} from {{{var(subinterpreter)}}} to {{{var(value)}}}.
+Return {{{var(NAME)}}} unchanged.
+#+end_defun
+
+#+attr_texinfo: :options emacspy-get-object-attr subinterpreter name &optional field_name &key as
+#+begin_defun
+Get attribute named {{{var(field_name)}}} from object named {{{var(name)}}} in global scope
+in sub-interpreter {{{var(subinterpreter)}}}.
+{{{var(name)}}} can have python-like form ~obj.field~. In such case ~field~ is used and {{{var(field_name)}}} is ignored.
+Bind result in global scope under name from :keyword argument {{{var(as)}}} or return it if {{{var(as)}}} is ~nil~.
+#+end_defun
+
+
+
+#+attr_texinfo: :options emacspy-exec-string subinterpreter string
+#+begin_defun
+Exec {{{var(string)}}} in {{{var(subinterpreter)}}}.
+There is no return value or details about exception.
+#+end_defun
+
+#+attr_texinfo: :options emacspy-eval-string subinterpreter string &key as
+#+begin_defun
+"Eval {{{var(string)}}} in {{{var(subinterpreter)}}}.
+Bind result in global scope under name from :keyword argument {{{var(as)}}} or return it if {{{var(as)}}} is ~nil~.
+#+end_defun
+
+#+attr_texinfo: :options emacspy-alist2hash alistno
+#+begin_defun
+Convert {{{var(alist)}}} to hash.
+It's handy as only hash is converted to python dictionary.
+#+end_defun
+
+#+attr_texinfo: :options emacspy-kwargs-plist2hash plist
+#+begin_defun
+Convert {{{var(plist)}}} to hash for easy creation of Python dicts.
+Plist keys are assumed to be symbols.
+It's handy as only hash is converted to python dictionary.
+#+end_defun
+
+* Examples of usage
+
+* Bugs and limitations
+
+As of Python 3.13 only Main python interpreter handles signals.
+It means it's impossible to send ~KeyboardInterrupt~ to subinterpreter; (See [[https://github.com/python/cpython/issues/113130][related GH issue]])
+Consequently, it is impossible (or, at least i have no idea how) to implement keyboard-quit.
+Thus, any long running python code could "hang" Emacs and *even C-g would not work*.
+In my opinion it's far more severe issue then theoretical problems of multiple Emacs modes that break each other.
+I didn't want to neither delay release of this module or change API in some undefined future so,
+all revelant functions take argument ~subinterpreter~ anyway. It just don't have any effect now.
+
+#+macro: var @@texinfo:@var{@@$1@@texinfo:}@@
+#+EXPORT_FILE_NAME: emacs_python_ffi
+#+OPTIONS: \n:t
+
+#+texinfo_header: @dircategory Emacs lisp
+#+texinfo_header: @direntry
+#+texinfo_header: * Emacs Python FFI: (emacs_python_ffi).	Elisp foreign function interface for Python.
+#+texinfo_header: @end direntry

@@ -2,7 +2,8 @@
 /*.so
 /emacspy_module.c
 /emacspy_module.h
-.mypy_cache
-*.pyc
 /.valgrind-python.supp
 /.cask
+/emacs_python_ffi.texi
+/emacs_python_ffi.info
+/emacs_python_ffi.html

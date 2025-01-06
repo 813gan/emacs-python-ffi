@@ -56,24 +56,24 @@ emacspy_module.so: stub.c subinterpreter.c
 		-o emacspy_module.so
 
 clean:
-	rm -vf emacspy_module.so
+	rm -vf emacspy_module.so emacs_python_ffi.texi emacs_python_ffi.info emacs_python_ffi.html
 clean_cask:
 	rm -vfr .cask
 clean_all: clean_cask clean
 
 test: test_module test_elisp test_formatting # test_c_g dont work in CI for some reason
 
-test_module: cask all
+test_module: cask emacspy_module.so
 	ulimit -c unlimited; ${CASK} emacs --module-assertions -batch -l ert \
 		-l tests/module-test.el -f ert-run-tests-batch-and-exit
 
-test_elisp: cask all
+test_elisp: cask emacspy_module.so
 	ulimit -c unlimited; ${CASK} emacs --module-assertions -batch -l ert \
 		-l tests/elisp-test.el -f ert-run-tests-batch-and-exit
 
 # https://stackoverflow.com/questions/20112989/how-to-use-valgrind-with-python
 test_valgrind: OPTIMALISATION_FLAGS=
-test_valgrind: clean all .valgrind-python.supp
+test_valgrind: clean emacspy_module.so .valgrind-python.supp
 	PYTHONMALLOC=malloc ${CASK} exec \
 		valgrind --tool=memcheck --suppressions=.valgrind-python.supp \
 		--leak-check=full --show-leak-kinds=all \
@@ -89,5 +89,14 @@ test_valgrind: clean all .valgrind-python.supp
 test_formatting:
 	${CLANGFORMAT} --dry-run --Werror stub.c subinterpreter.c datatypes.h
 
-test_c_g: cask all
+test_c_g: cask emacspy_module.so
 	bash -x tests/test_c_g.sh
+
+emacs_python_ffi.texi: README.org
+	emacs --batch README.org -l org -f org-texinfo-export-to-texinfo --kill
+
+emacs_python_ffi.info: emacs_python_ffi.texi
+	makeinfo --no-split emacs_python_ffi.texi
+
+emacs_python_ffi.html: emacs_python_ffi.texi
+	makeinfo --html --no-split -o emacs_python_ffi.html emacs_python_ffi.texi
