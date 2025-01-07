@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+<!-- Created by GNU Texinfo 7.1, https://www.gnu.org/software/texinfo/ -->
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>Emacs Python FFI</title>
+
+<meta name="description" content="Emacs Python FFI">
+<meta name="keywords" content="Emacs Python FFI">
+<meta name="resource-type" content="document">
+<meta name="distribution" content="global">
+<meta name="Generator" content="makeinfo">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
+<link href="#Top" rel="start" title="Top">
+<link href="#SEC_Contents" rel="contents" title="Table of Contents">
+<link href="#Installation" rel="next" title="Installation">
+<style type="text/css">
+<!--
+a.copiable-link {visibility: hidden; text-decoration: none; line-height: 0em}
+span:hover a.copiable-link {visibility: visible}
+strong.def-name {font-family: monospace; font-weight: bold; font-size: larger}
+ul.mark-bullet {list-style-type: disc}
+ul.toc-numbered-mark {list-style: none}
+-->
+</style>
+
+
+</head>
+
+<body lang="en">
+
+
+
+
+<div class="top-level-extent" id="Top">
+<div class="nav-panel">
+<p>
+Next: <a href="#Installation" accesskey="n" rel="next">Installation</a> &nbsp; [<a href="#SEC_Contents" title="Table of contents" rel="contents">Contents</a>]</p>
+</div>
+<h1 class="top" id="Emacs-Python-FFI"><span>Emacs Python FFI<a class="copiable-link" href="#Emacs-Python-FFI"> &para;</a></span></h1>
+
+<p>Emacs dynamic module that implements foreign function interface for python. <br>
+It allows usage of python modules in Elisp. <br>
+</p>
+
+
+<div class="element-contents" id="SEC_Contents">
+<h2 class="contents-heading">Table of Contents</h2>
+
+<div class="contents">
+
+<ul class="toc-numbered-mark">
+  <li><a id="toc-Installation-1" href="#Installation">1 Installation</a></li>
+  <li><a id="toc-Usage-1" href="#Usage">2 Usage</a></li>
+  <li><a id="toc-Examples-of-usage-1" href="#Examples-of-usage">3 Examples of usage</a></li>
+  <li><a id="toc-Bugs-and-limitations-1" href="#Bugs-and-limitations">4 Bugs and limitations</a></li>
+</ul>
+</div>
+</div>
+<hr>
+<div class="chapter-level-extent" id="Installation">
+<div class="nav-panel">
+<p>
+Next: <a href="#Usage" accesskey="n" rel="next">Usage</a>, Previous: <a href="#Top" accesskey="p" rel="prev">Emacs Python FFI</a>, Up: <a href="#Top" accesskey="u" rel="up">Emacs Python FFI</a> &nbsp; [<a href="#SEC_Contents" title="Table of contents" rel="contents">Contents</a>]</p>
+</div>
+<h2 class="chapter" id="Installation-1"><span>1 Installation<a class="copiable-link" href="#Installation-1"> &para;</a></span></h2>
+
+<p>there is no binary distribution now, so you need development tools to compile this module. <br>
+</p>
+<p>System dependencies: <br>
+</p>
+<ul class="itemize mark-bullet">
+<li>make <br>
+</li><li>gcc <br>
+</li><li>pkg-config <br>
+</li><li>python&gt;=3.10 with development tools; <br>
+it essentially means header Python.h must be present. <br>
+On Debian/Ubuntu you need package python-dev. <br>
+</li></ul>
+
+<p>If you compiled Python yourself and want to use it, then compile Emacs Python FFI with venv activated, <br>
+or <code class="code">export PYTHON=</code> with path to your exeutable before compilation. <br>
+Custom Python build needs to be <code class="code">./configure</code> d with <code class="code">--enable-shared</code> flag. <br>
+</p>
+<p>Elisp dependencies: <br>
+</p>
+<ul class="itemize mark-bullet">
+<li>python-environment <br>
+</li></ul>
+
+<hr>
+</div>
+<div class="chapter-level-extent" id="Usage">
+<div class="nav-panel">
+<p>
+Next: <a href="#Examples-of-usage" accesskey="n" rel="next">Examples of usage</a>, Previous: <a href="#Installation" accesskey="p" rel="prev">Installation</a>, Up: <a href="#Top" accesskey="u" rel="up">Emacs Python FFI</a> &nbsp; [<a href="#SEC_Contents" title="Table of contents" rel="contents">Contents</a>]</p>
+</div>
+<h2 class="chapter" id="Usage-1"><span>2 Usage<a class="copiable-link" href="#Usage-1"> &para;</a></span></h2>
+
+<p>For some reason Github dont display function definitions in repo overwiew. <br>
+See rendered github page. <br>
+</p>
+<p>This module is going to (See <a class="ref" href="#Bugs-and-limitations">Bugs and limitations</a>) utilize Python subinterpreters to isolate Emacs modes using this module from each other. <br>
+See <a class="uref" href="https://docs.python.org/3/c-api/init.html#sub-interpreter-support">Pyhton documentation</a> for details. <br>
+</p>
+<p>Most of functions in this module takes <code class="code">subinterpreter</code> as first argument. <br>
+</p>
+<dl class="first-deffn first-defun-alias-first-deffn">
+<dt class="deffn defun-alias-deffn" id="index-emacspy_002dpython_002denvironment_002dmake"><span class="category-def">Function: </span><span><strong class="def-name">emacspy-python-environment-make</strong> <var class="def-var-arguments">subinterpreter &amp;optional packages virtualenv</var><a class="copiable-link" href="#index-emacspy_002dpython_002denvironment_002dmake"> &para;</a></span></dt>
+<dd><br>
+</dd></dl>
+
+<dl class="first-deffn first-defun-alias-first-deffn">
+<dt class="deffn defun-alias-deffn" id="index-emacspy_002dcall"><span class="category-def">Function: </span><span><strong class="def-name">emacspy-call</strong> <var class="def-var-arguments">subinterpreter name &amp;rest args &amp;key as kwargs</var><a class="copiable-link" href="#index-emacspy_002dcall"> &para;</a></span></dt>
+<dd><p>Call functionn or method referenced by <var class="var">name</var>. <br>
+<var class="var">name</var> can either take form of <code class="code">function_name</code> or <code class="code">object_name.method_name</code>. <br>
+Pass non-keyword arguments will be passed as positional arguments. <br>
+Pass property list from :keyword argument <var class="var">kwargs</var> as keyword arguments. <br>
+Bind result in global scope under name from :keyword argument <var class="var">as</var> or return it if <var class="var">as</var> is <code class="code">nil</code>. <br>
+</p></dd></dl>
+
+<dl class="first-deffn first-defun-alias-first-deffn">
+<dt class="deffn defun-alias-deffn" id="index-emacspy_002dget_002dvariable_002dglobal"><span class="category-def">Function: </span><span><strong class="def-name">emacspy-get-variable-global</strong> <var class="def-var-arguments">subinterpreter name</var><a class="copiable-link" href="#index-emacspy_002dget_002dvariable_002dglobal"> &para;</a></span></dt>
+<dd><p>Get global variable named <var class="var">name</var> from <var class="var">subinterpreter</var>. <br>
+</p></dd></dl>
+
+<dl class="first-deffn first-defun-alias-first-deffn">
+<dt class="deffn defun-alias-deffn" id="index-emacspy_002dset_002dvariable_002dglobal"><span class="category-def">Function: </span><span><strong class="def-name">emacspy-set-variable-global</strong> <var class="def-var-arguments">subinterpreter name value</var><a class="copiable-link" href="#index-emacspy_002dset_002dvariable_002dglobal"> &para;</a></span></dt>
+<dd><p>Set global variable named <var class="var">name</var> from <var class="var">subinterpreter</var> to <var class="var">value</var>. <br>
+Return <var class="var">NAME</var> unchanged. <br>
+</p></dd></dl>
+
+<dl class="first-deffn first-defun-alias-first-deffn">
+<dt class="deffn defun-alias-deffn" id="index-emacspy_002dget_002dobject_002dattr"><span class="category-def">Function: </span><span><strong class="def-name">emacspy-get-object-attr</strong> <var class="def-var-arguments">subinterpreter name &amp;optional field_name &amp;key as</var><a class="copiable-link" href="#index-emacspy_002dget_002dobject_002dattr"> &para;</a></span></dt>
+<dd><p>Get attribute named <var class="var">field<em class="math">_name</em></var> from object named <var class="var">name</var> in global scope <br>
+in sub-interpreter <var class="var">subinterpreter</var>. <br>
+<var class="var">name</var> can have python-like form <code class="code">obj.field</code>. In such case <code class="code">field</code> is used and <var class="var">field<em class="math">_name</em></var> is ignored. <br>
+Bind result in global scope under name from :keyword argument <var class="var">as</var> or return it if <var class="var">as</var> is <code class="code">nil</code>. <br>
+</p></dd></dl>
+
+
+
+<dl class="first-deffn first-defun-alias-first-deffn">
+<dt class="deffn defun-alias-deffn" id="index-emacspy_002dexec_002dstring"><span class="category-def">Function: </span><span><strong class="def-name">emacspy-exec-string</strong> <var class="def-var-arguments">subinterpreter string</var><a class="copiable-link" href="#index-emacspy_002dexec_002dstring"> &para;</a></span></dt>
+<dd><p>Exec <var class="var">string</var> in <var class="var">subinterpreter</var>. <br>
+There is no return value or details about exception. <br>
+</p></dd></dl>
+
+<dl class="first-deffn first-defun-alias-first-deffn">
+<dt class="deffn defun-alias-deffn" id="index-emacspy_002deval_002dstring"><span class="category-def">Function: </span><span><strong class="def-name">emacspy-eval-string</strong> <var class="def-var-arguments">subinterpreter string &amp;key as</var><a class="copiable-link" href="#index-emacspy_002deval_002dstring"> &para;</a></span></dt>
+<dd><p>&quot;Eval <var class="var">string</var> in <var class="var">subinterpreter</var>. <br>
+Bind result in global scope under name from :keyword argument <var class="var">as</var> or return it if <var class="var">as</var> is <code class="code">nil</code>. <br>
+</p></dd></dl>
+
+<dl class="first-deffn first-defun-alias-first-deffn">
+<dt class="deffn defun-alias-deffn" id="index-emacspy_002dalist2hash"><span class="category-def">Function: </span><span><strong class="def-name">emacspy-alist2hash</strong> <var class="def-var-arguments">alistno</var><a class="copiable-link" href="#index-emacspy_002dalist2hash"> &para;</a></span></dt>
+<dd><p>Convert <var class="var">alist</var> to hash. <br>
+It&rsquo;s handy as only hash is converted to python dictionary. <br>
+</p></dd></dl>
+
+<dl class="first-deffn first-defun-alias-first-deffn">
+<dt class="deffn defun-alias-deffn" id="index-emacspy_002dkwargs_002dplist2hash"><span class="category-def">Function: </span><span><strong class="def-name">emacspy-kwargs-plist2hash</strong> <var class="def-var-arguments">plist</var><a class="copiable-link" href="#index-emacspy_002dkwargs_002dplist2hash"> &para;</a></span></dt>
+<dd><p>Convert <var class="var">plist</var> to hash for easy creation of Python dicts. <br>
+Plist keys are assumed to be symbols. <br>
+It&rsquo;s handy as only hash is converted to python dictionary. <br>
+</p></dd></dl>
+
+<hr>
+</div>
+<div class="chapter-level-extent" id="Examples-of-usage">
+<div class="nav-panel">
+<p>
+Next: <a href="#Bugs-and-limitations" accesskey="n" rel="next">Bugs and limitations</a>, Previous: <a href="#Usage" accesskey="p" rel="prev">Usage</a>, Up: <a href="#Top" accesskey="u" rel="up">Emacs Python FFI</a> &nbsp; [<a href="#SEC_Contents" title="Table of contents" rel="contents">Contents</a>]</p>
+</div>
+<h2 class="chapter" id="Examples-of-usage-1"><span>3 Examples of usage<a class="copiable-link" href="#Examples-of-usage-1"> &para;</a></span></h2>
+
+<hr>
+</div>
+<div class="chapter-level-extent" id="Bugs-and-limitations">
+<div class="nav-panel">
+<p>
+Previous: <a href="#Examples-of-usage" accesskey="p" rel="prev">Examples of usage</a>, Up: <a href="#Top" accesskey="u" rel="up">Emacs Python FFI</a> &nbsp; [<a href="#SEC_Contents" title="Table of contents" rel="contents">Contents</a>]</p>
+</div>
+<h2 class="chapter" id="Bugs-and-limitations-1"><span>4 Bugs and limitations<a class="copiable-link" href="#Bugs-and-limitations-1"> &para;</a></span></h2>
+
+<p>As of Python 3.13 only Main python interpreter handles signals. <br>
+It means it&rsquo;s impossible to send <code class="code">KeyboardInterrupt</code> to subinterpreter; (See <a class="uref" href="https://github.com/python/cpython/issues/113130">related GH issue</a>) <br>
+Consequently, it is impossible (or, at least i have no idea how) to implement keyboard-quit. <br>
+Thus, any long running python code could &quot;hang&quot; Emacs and <strong class="strong">even C-g would not work</strong>. <br>
+In my opinion it&rsquo;s far more severe issue then theoretical problems of multiple Emacs modes that break each other. <br>
+I didn&rsquo;t want to neither delay release of this module or change API in some undefined future so, <br>
+all revelant functions take argument <code class="code">subinterpreter</code> anyway. It just don&rsquo;t have any effect now. <br>
+</p>
+</div>
+</div>
+
+
+
+</body>
+</html>
