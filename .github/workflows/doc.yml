@@ -1,0 +1,35 @@
+name: doc
+# https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site
+on:
+  push:
+    branches: [ master ]
+    paths:
+      - 'README.org'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: purcell/setup-emacs@master
+      with:
+        version: snapshot
+    - run: mkdir -pv public && make emacs_python_ffi.html && mv emacs_python_ffi.html public/index.html
+    - uses: actions/upload-pages-artifact@v3
+      with:
+        name: github-pages
+        path: public
+  deploy:
+    needs: build
+    permissions:
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
