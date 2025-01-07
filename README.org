@@ -26,6 +26,9 @@ _Elisp dependencies_:
 
 * Usage
 
+For some reason Github dont display function definitions in repo overwiew.
+See rendered github page.
+
 This module is going to (See [[*Bugs and limitations][Bugs and limitations]]) utilize Python subinterpreters to isolate Emacs modes using this module from each other.
 See [[https://docs.python.org/3/c-api/init.html#sub-interpreter-support][Pyhton documentation]] for details.
 
