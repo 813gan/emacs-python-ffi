@@ -26,9 +26,9 @@ ifeq (, $(shell pkg-config --help))
 $(error "pkg-config not found.")
 endif
 
-.DEFAULT_GOAL := emacspy_module.so
+.DEFAULT_GOAL := python-ffi-module.so
 
-all: emacspy_module.so emacs_python_ffi.html
+all: python-ffi-module.so emacs-python-ffi.html
 
 CASK_DIR := $(shell ${CASK} package-directory)
 $(CASK_DIR): Cask
@@ -40,42 +40,42 @@ IS_PYTHON_OLD := $(shell ${PYTHON} -c 'from sys import version_info; \
 print("-DPYTHON311OLDER") if (version_info < (3, 12)) else exit(0)')
 
 # https://github.com/grisha/mod_python/issues/81#issuecomment-551655070
-emacspy_module.so: BLDLIBRARY=$(shell ${PYTHON} -c \
+python-ffi-module.so: BLDLIBRARY=$(shell ${PYTHON} -c \
 	 'import sysconfig; print(sysconfig.get_config_var("BLDLIBRARY"))')
-emacspy_module.so: PKGCONFIG_PATH=$(shell ${PYTHON} -c \
+python-ffi-module.so: PKGCONFIG_PATH=$(shell ${PYTHON} -c \
 	 'import sysconfig; print(sysconfig.get_config_var("LIBPC"))')
-emacspy_module.so: LIBPYTHON_NAME=$(shell ${PYTHON} -c \
+python-ffi-module.so: LIBPYTHON_NAME=$(shell ${PYTHON} -c \
 	 'import sysconfig; print(sysconfig.get_config_var("LDLIBRARY"))')
-emacspy_module.so: BASE_PREFIX=$(shell ${PYTHON} -c \
+python-ffi-module.so: BASE_PREFIX=$(shell ${PYTHON} -c \
 	 'import sys; print(sys.base_prefix)')
-emacspy_module.so: stub.c subinterpreter.c
+python-ffi-module.so: python-ffi.c python-ffi-functions.c
 	gcc ${C_VERSION} -fPIC -g \
 		${IS_PYTHON_OLD} -DBASE_PREFIX=L\"${BASE_PREFIX}\" \
 		-Wall -Wextra -Werror ${OPTIMALISATION_FLAGS} ${HARDENING_FLAGS} ${GCC_NO_WARN} \
-		subinterpreter.c stub.c \
+		python-ffi-functions.c python-ffi.c \
 		${BLDLIBRARY} -DLIBPYTHON_NAME=\"${LIBPYTHON_NAME}\" \
 		-shared $(shell pkg-config --cflags --libs $(PKGCONFIG_PATH)"/python3-embed.pc") \
-		-o emacspy_module.so
+		-o python-ffi-module.so
 
 clean:
-	rm -vf emacspy_module.so emacs_python_ffi.texi emacs_python_ffi.info emacs_python_ffi.html
+	rm -vf python-ffi-module.so emacs-python-ffi.texi emacs-python_ffi.info emacs-python-ffi.html
 clean_cask:
 	rm -vfr .cask
 clean_all: clean_cask clean
 
 test: test_module test_elisp test_formatting # test_c_g dont work in CI for some reason
 
-test_module: cask emacspy_module.so
+test_module: cask python-ffi-module.so
 	ulimit -c unlimited; ${CASK} emacs --module-assertions -batch -l ert \
 		-l tests/module-test.el -f ert-run-tests-batch-and-exit
 
-test_elisp: cask emacspy_module.so
+test_elisp: cask python-ffi-module.so
 	ulimit -c unlimited; ${CASK} emacs --module-assertions -batch -l ert \
 		-l tests/elisp-test.el -f ert-run-tests-batch-and-exit
 
 # https://stackoverflow.com/questions/20112989/how-to-use-valgrind-with-python
 test_valgrind: OPTIMALISATION_FLAGS=
-test_valgrind: clean emacspy_module.so .valgrind-python.supp
+test_valgrind: clean python-ffi-module.so .valgrind-python.supp
 	PYTHONMALLOC=malloc ${CASK} exec \
 		valgrind --tool=memcheck --suppressions=.valgrind-python.supp \
 		--leak-check=full --show-leak-kinds=all \
@@ -88,16 +88,16 @@ test_valgrind: clean emacspy_module.so .valgrind-python.supp
 	false
 
 test_formatting:
-	${CLANGFORMAT} --dry-run --Werror stub.c subinterpreter.c datatypes.h
+	${CLANGFORMAT} --dry-run --Werror python-ffi.c python-ffi-functions.c datatypes.h
 
-test_c_g: cask emacspy_module.so
+test_c_g: cask python-ffi-module.so
 	bash -x tests/test_c_g.sh
 
 emacs_python_ffi.texi: README.org
 	emacs --batch README.org -l org -f org-texinfo-export-to-texinfo --kill
 
-emacs_python_ffi.info: emacs_python_ffi.texi
-	makeinfo --no-split emacs_python_ffi.texi
+emacs-python-ffi.info: emacs-python-ffi.texi
+	makeinfo --no-split emacs-python-ffi.texi
 
-emacs_python_ffi.html: emacs_python_ffi.texi
-	makeinfo --html --no-split -o emacs_python_ffi.html emacs_python_ffi.texi
+emacs-python-ffi.html: emacs-python-ffi.texi
+	makeinfo --html --no-split -o emacs-python-ffi.html emacs-python-ffi.texi

@@ -34,13 +34,13 @@ const python_function call_py_e = 6;
 
 #define PY_INTERRUPT_SIGNAL 42
 
-#define SYM(_EMACSPY_SYMBOLNAME) \
-	ENV->intern(ENV, _EMACSPY_SYMBOLNAME) // static function instead?
+#define SYM(_PYTHON_FFI_SYMBOLNAME) \
+	ENV->intern(ENV, _PYTHON_FFI_SYMBOLNAME) // static function instead?
 
 pthread_cond_t ARG_COND;
 pthread_mutex_t ARG_MUTEX;
 pthread_mutex_t RET_MUTEX;
-pthread_t EMACSPY_THREAD = 0;
+pthread_t PYTHON_FFI_THREAD = 0;
 
 struct python_call PYTHON_CALL;
 struct python_return PYTHON_RET;
@@ -106,7 +106,7 @@ struct argument elisp2c(emacs_env *ENV, emacs_value arg) {
 		emacs_value car;
 
 		if (!ENV->is_not_nil(ENV, ENV->funcall(ENV, SYM("listp"), 1, &cdr))) {
-			emacs_signal_error(ENV, "emacspy-conversion-from-elisp-failed",
+			emacs_signal_error(ENV, "python-ffi-conversion-from-elisp-failed",
 			    "Attempted list translation on non list");
 		}
 		ret.list.size = ENV->extract_integer(ENV,
@@ -120,8 +120,8 @@ struct argument elisp2c(emacs_env *ENV, emacs_value arg) {
 		}
 	} else if (ENV->eq(ENV, arg_type, SYM("hash-table"))) {
 		ret.type = hash_e; // test me for empty hash.
-		emacs_value kv_list = ENV->funcall(ENV, SYM("emacspy--hash-table-to-lists"), 1,
-		    &arg);
+		emacs_value kv_list = ENV->funcall(ENV, SYM("python-ffi--hash-table-to-lists"),
+		    1, &arg);
 		emacs_value emacs_k_list = ENV->funcall(ENV, SYM("car"), 1, &kv_list);
 		emacs_value emacs_v_list = ENV->funcall(ENV, SYM("cadr"), 1, &kv_list);
 
@@ -142,7 +142,7 @@ struct argument elisp2c(emacs_env *ENV, emacs_value arg) {
 			ret.hash.values.buf = NULL;
 		}
 	} else {
-		emacs_signal_error(ENV, "emacspy-conversion-from-elisp-failed",
+		emacs_signal_error(ENV, "python-ffi-conversion-from-elisp-failed",
 		    "invalid datatype");
 	}
 	/* if (emacs_funcall_exit_signal == ENV->non_local_exit_check(ENV)) */
@@ -195,7 +195,7 @@ emacs_value c2elisp(emacs_env *ENV, struct argument arg) {
 		hash_args[0] = c2elisp(ENV, hash_keys_list);
 		hash_args[1] = c2elisp(ENV, hash_values_list);
 
-		ret = ENV->funcall(ENV, SYM("emacspy--lists-to-hash-table"), 2, hash_args);
+		ret = ENV->funcall(ENV, SYM("python-ffi--lists-to-hash-table"), 2, hash_args);
 		break;
 	case boolean_e:
 		ret = (arg.boolean ? SYM("t") : SYM("nil"));
@@ -217,12 +217,12 @@ emacs_value c2elisp(emacs_env *ENV, struct argument arg) {
 		ret = SYM("nil");
 		break;
 	case symbol_e:
-		emacs_signal_error(ENV, "emacspy-conversion-from-python-failed",
+		emacs_signal_error(ENV, "python-ffi-conversion-from-python-failed",
 		    "impossible return value type: symbol");
 		ret = SYM("nil");
 		break;
 		/* default: */
-		/*	emacs_signal_error(ENV, "emacspy-conversion-from-python-failed",
+		/*	emacs_signal_error(ENV, "python-ffi-conversion-from-python-failed",
 		 * "invalid datatype"); */
 		/*	break; */
 	}
@@ -360,11 +360,11 @@ emacs_value call_function(emacs_env *env, ptrdiff_t nargs, emacs_value *args, vo
 	case ready_wwr:
 		break;
 	case initialization_fail_wwr:
-		emacs_signal_error(env, "emacspy-error-worker-init-failed",
+		emacs_signal_error(env, "python-ffi-error-worker-init-failed",
 		    "Python didn't initialize. Python version mismatch?");
 		return NULL;
 	case worker_dead_wwr:
-		emacs_signal_error(env, "emacspy-error-worker-dead",
+		emacs_signal_error(env, "python-ffi-error-worker-dead",
 		    "Python worker died. Insufficient RAM?");
 		return NULL;
 	}
@@ -394,7 +394,8 @@ emacs_value call_function(emacs_env *env, ptrdiff_t nargs, emacs_value *args, vo
 			break;
 		case emacs_process_input_quit:
 			if (quit_not_tried) {
-				assert(0 == pthread_kill(EMACSPY_THREAD, PY_INTERRUPT_SIGNAL));
+				assert(
+				    0 == pthread_kill(PYTHON_FFI_THREAD, PY_INTERRUPT_SIGNAL));
 				quit_not_tried = false;
 			}
 			break;
@@ -413,7 +414,7 @@ emacs_value call_function(emacs_env *env, ptrdiff_t nargs, emacs_value *args, vo
 			assert(0 == pthread_mutex_unlock(&RET_MUTEX));
 			continue;
 		} else if (EOWNERDEAD == lock_status) {
-			emacs_signal_error(env, "emacspy-error-worker-dead",
+			emacs_signal_error(env, "python-ffi-error-worker-dead",
 			    "Python worker died. Insufficient RAM?");
 			return NULL;
 		}
@@ -441,13 +442,13 @@ int emacs_module_init(struct emacs_runtime *runtime) {
 	// https://www.gnu.org/software/emacs/manual/html_node/elisp/Module-Initialization.html#index-emacs_005fmodule_005finit-1
 	if ((long unsigned int)runtime->size < sizeof(*runtime)) {
 		fprintf(stderr, "%s\n",
-		    "ERROR: emacs_module_init: emacspy was compiled for newer version of Emacs.");
+		    "ERROR: emacs_module_init: python-ffi was compiled for newer version of Emacs.");
 		return 1;
 	}
 
-	if (EMACSPY_THREAD) {
+	if (PYTHON_FFI_THREAD) {
 		fprintf(stderr, "%s\n",
-		    "ERROR: emacs_module_init: emacspy thread is already active.");
+		    "ERROR: emacs_module_init: python-ffi thread is already active.");
 		return 2;
 	}
 
@@ -479,18 +480,18 @@ int emacs_module_init(struct emacs_runtime *runtime) {
 	sigaddset(&mask, PY_INTERRUPT_SIGNAL);
 	pthread_sigmask(SIG_BLOCK, &mask, NULL);
 
-	int status = pthread_create(&EMACSPY_THREAD, NULL, &python_worker_thread_f, NULL);
+	int status = pthread_create(&PYTHON_FFI_THREAD, NULL, &python_worker_thread_f, NULL);
 	if (status != 0) {
 		return 3;
 	}
-	emacs_value args[] = { env->intern(env, "emacspy_module") };
+	emacs_value args[] = { env->intern(env, "python-ffi-module") };
 	env->funcall(env, env->intern(env, "provide"), 1, args);
 
 	make_funtion(env, &make_interpreter_e, "py-make-interpreter", 1, "");
 	make_funtion(env, &import_module_e, "py-import", 3, "");
-	make_funtion(env, &eval_string_e, "emacspy--eval-string", 3, "");
-	make_funtion(env, &exec_string_e, "emacspy--exec-string", 2, "");
-	make_funtion(env, &call_py_e, "emacspy--call", 6, "");
+	make_funtion(env, &eval_string_e, "python-ffi--eval-string", 3, "");
+	make_funtion(env, &exec_string_e, "python-ffi--exec-string", 2, "");
+	make_funtion(env, &call_py_e, "python-ffi--call", 6, "");
 
 	return wait_for_worker(); // can return 0,4,5 TODO test c-g during wait
 }

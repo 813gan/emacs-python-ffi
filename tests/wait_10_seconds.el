@@ -1,10 +1,10 @@
 (add-to-list 'load-path ".")
-(load "emacspy")
-(emacspy-setup-subinterpreter "test")
+(load "python-ffi")
+(python-ffi-setup-subinterpreter "test")
 
-(emacspy-import-py "test"
+(python-ffi-import-py "test"
                    (from "time" import "sleep"))
 
 (message "wait start...")
-(emacspy-call "test" "sleep" 10)
+(python-ffi-call "test" "sleep" 10)
 (message "wait finished.")

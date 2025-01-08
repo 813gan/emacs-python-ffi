@@ -2,4 +2,4 @@
 
 (source melpa)
 
-(package-file "emacspy.el")
+(package-file "python-ffi.el")
