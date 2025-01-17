@@ -3,14 +3,16 @@
 Emacs dynamic module that implements foreign function interface for python.
 It allows usage of python modules in Elisp.
 
+https://github.com/813gan/emacs-python-ffi
+
 * Installation
 
-there is no binary distribution now, so you need development tools to compile this module.
+There is no binary distribution now, so you need development tools to compile this module.
 
 _System dependencies_:
 
 - make
-- gcc
+- GCC
 - pkg-config
 - python>=3.10 with development tools;
   it essentially means header Python.h must be present.
@@ -26,20 +28,20 @@ _Elisp dependencies_:
 
 * Usage
 
-For some reason Github dont display function definitions in repo overwiew.
-See rendered github page.
+*NOTE for GitHub users: As of beginning of 2025 GitHub don't display function definitions in repository overview.*
+*See rendered* [[https://813gan.github.io/emacs-python-ffi/][github page instead]].
 
-This module is going to (See [[*Bugs and limitations][Bugs and limitations]]) utilize Python subinterpreters to isolate Emacs modes using this module from each other.
+This module is going to (See [[*Bugs and limitations][Bugs and limitations]]) utilize Python sub-interpreters to isolate Emacs modes using this module from each other.
 See [[https://docs.python.org/3/c-api/init.html#sub-interpreter-support][Pyhton documentation]] for details.
 
 Most of functions in this module takes ~subinterpreter~ as first argument.
 
-#+attr_texinfo: :options emacspy-python-environment-make subinterpreter &optional packages virtualenv
+#+attr_texinfo: :options python-ffi-python-environment-make subinterpreter &optional packages virtualenv
 #+begin_defun
 
 #+end_defun
 
-#+attr_texinfo: :options emacspy-call subinterpreter name &rest args &key as kwargs
+#+attr_texinfo: :options python-ffi-call subinterpreter name &rest args &key as kwargs
 #+begin_defun
 Call functionn or method referenced by {{{var(name)}}}.
 {{{var(name)}}} can either take form of ~function_name~ or ~object_name.method_name~.
@@ -48,18 +50,18 @@ Pass property list from :keyword argument {{{var(kwargs)}}} as keyword arguments
 Bind result in global scope under name from :keyword argument {{{var(as)}}} or return it if {{{var(as)}}} is ~nil~.
 #+end_defun
 
-#+attr_texinfo: :options emacspy-get-variable-global subinterpreter name
+#+attr_texinfo: :options python-ffi-get-variable-global subinterpreter name
 #+begin_defun
 Get global variable named {{{var(name)}}} from {{{var(subinterpreter)}}}.
 #+end_defun
 
-#+attr_texinfo: :options emacspy-set-variable-global subinterpreter name value
+#+attr_texinfo: :options python-ffi-set-variable-global subinterpreter name value
 #+begin_defun
 Set global variable named {{{var(name)}}} from {{{var(subinterpreter)}}} to {{{var(value)}}}.
 Return {{{var(NAME)}}} unchanged.
 #+end_defun
 
-#+attr_texinfo: :options emacspy-get-object-attr subinterpreter name &optional field_name &key as
+#+attr_texinfo: :options python-ffi-get-object-attr subinterpreter name &optional field_name &key as
 #+begin_defun
 Get attribute named {{{var(field_name)}}} from object named {{{var(name)}}} in global scope
 in sub-interpreter {{{var(subinterpreter)}}}.
@@ -67,27 +69,38 @@ in sub-interpreter {{{var(subinterpreter)}}}.
 Bind result in global scope under name from :keyword argument {{{var(as)}}} or return it if {{{var(as)}}} is ~nil~.
 #+end_defun
 
-
-
-#+attr_texinfo: :options emacspy-exec-string subinterpreter string
+#+attr_texinfo: :options python-ffi-set-object-attr subinterpreter name value &optional field_name
 #+begin_defun
-Exec {{{var(string)}}} in {{{var(subinterpreter)}}}.
-There is no return value or details about exception.
-#+end_defun
-
-#+attr_texinfo: :options emacspy-eval-string subinterpreter string &key as
-#+begin_defun
-"Eval {{{var(string)}}} in {{{var(subinterpreter)}}}.
+Get attribute named {{{var(field_name)}}} from object named {{{var(name)}}} in global scope 
+in sub-interpreter {{{var(subinterpreter)}}}.
+{{{var(name)}}} can have python-like form ~obj.field~. In such case ~field~ is used and {{{var(field_name)}}} is ignored.
 Bind result in global scope under name from :keyword argument {{{var(as)}}} or return it if {{{var(as)}}} is ~nil~.
 #+end_defun
 
-#+attr_texinfo: :options emacspy-alist2hash alistno
+#+attr_texinfo: :options python-ffi-exec-string subinterpreter string
+#+begin_defun
+*Warning*: This function executes arbitrary code. Calling it with user-supplied input may lead to security vulnerabilities.
+Exec {{{var(string)}}} in {{{var(subinterpreter)}}}.
+*Return value is always* ~'t~.
+Internally it uses ~PyObject_Call~ on build-in [[https://docs.python.org/3/library/functions.html#exec][exec]].
+This function
+#+end_defun
+
+#+attr_texinfo: :options python-ffi-eval-string subinterpreter string &key as
+#+begin_defun
+*Warning*: This function executes arbitrary code. Calling it with user-supplied input may lead to security vulnerabilities.
+"Eval {{{var(string)}}} in {{{var(subinterpreter)}}}.
+Bind result in global scope under name from :keyword argument {{{var(as)}}} or return it if {{{var(as)}}} is ~nil~.
+Internally it uses ~PyObject_Call~ on build-in [[https://docs.python.org/3/library/functions.html#eval][eval]].
+#+end_defun
+
+#+attr_texinfo: :options python-ffi-alist2hash alist
 #+begin_defun
 Convert {{{var(alist)}}} to hash.
 It's handy as only hash is converted to python dictionary.
 #+end_defun
 
-#+attr_texinfo: :options emacspy-kwargs-plist2hash plist
+#+attr_texinfo: :options python-ffi-kwargs-plist2hash plist
 #+begin_defun
 Convert {{{var(plist)}}} to hash for easy creation of Python dicts.
 Plist keys are assumed to be symbols.
@@ -95,6 +108,26 @@ It's handy as only hash is converted to python dictionary.
 #+end_defun
 
 * Examples of usage
+
+* Troubleshooting
+
+** Python-FFI fails to load
+
+*** Error 1
+Mismatch of module API version between Emacs and python-ffi.
+Update python-ffi to newest version.
+If problem persist file bug report.
+*** Error 2
+attemted loading python-ffi more then once.
+This shouldn't have any effect.
+*** Error 3
+Starting of Python thread failed (pthread_create).
+Try restart. If problem persist file bug report.
+*** Error 6
+One of pthread functions failed.
+It's possible if Emacs was running on system with low memory.
+Try restart. If problem persist file bug report.
+
 
 * Bugs and limitations
 
