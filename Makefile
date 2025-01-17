@@ -93,7 +93,7 @@ test_formatting:
 test_c_g: cask python-ffi-module.so
 	bash -x tests/test_c_g.sh
 
-emacs_python_ffi.texi: README.org
+emacs-python-ffi.texi: README.org
 	emacs --batch README.org -l org -f org-texinfo-export-to-texinfo --kill
 
 emacs-python-ffi.info: emacs-python-ffi.texi

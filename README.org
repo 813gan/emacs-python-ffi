@@ -140,7 +140,7 @@ I didn't want to neither delay release of this module or change API in some unde
 all revelant functions take argument ~subinterpreter~ anyway. It just don't have any effect now.
 
 #+macro: var @@texinfo:@var{@@$1@@texinfo:}@@
-#+EXPORT_FILE_NAME: emacs_python_ffi
+#+EXPORT_FILE_NAME: emacs-python-ffi
 #+OPTIONS: \n:t
 
 #+texinfo_header: @dircategory Emacs lisp
